@@ -1,36 +1,15 @@
-#!/usr/bin/env python2.7
-# coding=utf-8
-# Author: Dustyn Gibson <miigotu@gmail.com>
-# URL: http://github.com/SickRage/SickRage
-#
-# This file is part of SickRage.
-#
-# SickRage is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# SickRage is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with SickRage. If not, see <http://www.gnu.org/licenses/>.
-
 """
-Test sickbeard.helpers
+Test oldbeard.helpers
 
 Public Methods:
     indentXML
     remove_non_release_groups
-    isMediaFile
-    isRarFile
-    isBeingWritten
+    is_media_file
+    is_rar_file
     remove_file_failed
     makeDir
     searchIndexerForShowID
-    listMediaFiles
+    list_media_files
     copyFile
     moveFile
     link
@@ -48,7 +27,6 @@ Public Methods:
     get_absolute_number_from_season_and_episode
     get_all_episodes_from_absolute_number
     sanitizeSceneName
-    arithmeticEval
     create_https_certificates
     backupVersionedFile
     restoreVersionedFile
@@ -61,13 +39,12 @@ Public Methods:
     get_show
     is_hidden_folder
     real_path
-    validateShow
+    is_subdirectory
     set_up_anidb_connection
     makeZip
     extractZip
-    backupConfigZip
-    restoreConfigZip
-    mapIndexersToShow
+    backup_config_zip
+    restore_config_zip
     touchFile
     getURL
     download_file
@@ -77,63 +54,63 @@ Public Methods:
     generateCookieSecret
     verify_freespace
     pretty_time_delta
-    isFileLocked
-    getDiskSpaceUsage
+    is_file_locked
+    disk_usage
+    sortable_name
+    manage_torrents_url
+    bdecode
 Private Methods:
     _check_against_names
     _setUpSession
 """
 
-from __future__ import print_function
-import os.path
-import sys
+import os
 import unittest
+from shutil import rmtree
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '../lib')))
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from sickchill import settings
+from sickchill.helper import MEDIA_EXTENSIONS, SUBTITLE_EXTENSIONS
+from sickchill.oldbeard import helpers
 
-from sickbeard import helpers
-from sickrage.helper.common import media_extensions, subtitle_extensions
-
-TEST_RESULT = 'Show.Name.S01E01.HDTV.x264-RLSGROUP'
+TEST_RESULT = 'Show.Name.S01E01.HDTV.x264-SICKCHILL'
 TEST_CASES = {
     'removewords': [
         TEST_RESULT,
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP[cttv]',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP.RiPSaLoT',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP[GloDLS]',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP[EtHD]',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP-20-40',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP[NO-RAR] - [ www.torrentday.com ]',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP[rarbg]',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP[Seedbox]',
-        '{ www.SceneTime.com } - Show.Name.S01E01.HDTV.x264-RLSGROUP',
-        '].[www.tensiontorrent.com] - Show.Name.S01E01.HDTV.x264-RLSGROUP',
-        '[ www.TorrentDay.com ] - Show.Name.S01E01.HDTV.x264-RLSGROUP',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP[silv4]',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP[AndroidTwoU]',
-        '[www.newpct1.com]Show.Name.S01E01.HDTV.x264-RLSGROUP',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP-NZBGEEK',
-        '.www.Cpasbien.pwShow.Name.S01E01.HDTV.x264-RLSGROUP',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP [1044]',
-        '[ www.Cpasbien.pw ] Show.Name.S01E01.HDTV.x264-RLSGROUP',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP.[BT]',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP[vtv]',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP.[www.usabit.com]',
-        '[www.Cpasbien.com] Show.Name.S01E01.HDTV.x264-RLSGROUP',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP[ettv]',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP[rartv]',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP-Siklopentan',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP-RP',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP[PublicHD]',
-        '[www.Cpasbien.pe] Show.Name.S01E01.HDTV.x264-RLSGROUP',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP[eztv]',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP-[SpastikusTV]',
-        '].[ www.tensiontorrent.com ] - Show.Name.S01E01.HDTV.x264-RLSGROUP',
-        '[ www.Cpasbien.com ] Show.Name.S01E01.HDTV.x264-RLSGROUP',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP- { www.SceneTime.com }',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP- [ www.torrentday.com ]',
-        'Show.Name.S01E01.HDTV.x264-RLSGROUP.Renc'
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL[cttv]',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL.RiPSaLoT',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL[GloDLS]',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL[EtHD]',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL-20-40',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL[NO-RAR] - [ www.torrentday.com ]',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL[rarbg]',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL[Seedbox]',
+        '{ www.SceneTime.com } - Show.Name.S01E01.HDTV.x264-SICKCHILL',
+        '].[www.tensiontorrent.com] - Show.Name.S01E01.HDTV.x264-SICKCHILL',
+        '[ www.TorrentDay.com ] - Show.Name.S01E01.HDTV.x264-SICKCHILL',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL[silv4]',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL[AndroidTwoU]',
+        '[www.newpct1.com]Show.Name.S01E01.HDTV.x264-SICKCHILL',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL-NZBGEEK',
+        '.www.Cpasbien.pwShow.Name.S01E01.HDTV.x264-SICKCHILL',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL [1044]',
+        '[ www.Cpasbien.pw ] Show.Name.S01E01.HDTV.x264-SICKCHILL',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL.[BT]',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL[vtv]',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL.[www.usabit.com]',
+        '[www.Cpasbien.com] Show.Name.S01E01.HDTV.x264-SICKCHILL',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL[ettv]',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL[rartv]',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL-Siklopentan',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL-RP',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL[PublicHD]',
+        '[www.Cpasbien.pe] Show.Name.S01E01.HDTV.x264-SICKCHILL',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL[eztv]',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL-[SpastikusTV]',
+        '].[ www.tensiontorrent.com ] - Show.Name.S01E01.HDTV.x264-SICKCHILL',
+        '[ www.Cpasbien.com ] Show.Name.S01E01.HDTV.x264-SICKCHILL',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL- { www.SceneTime.com }',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL- [ www.torrentday.com ]',
+        'Show.Name.S01E01.HDTV.x264-SICKCHILL.Renc'
     ]
 }
 
@@ -146,7 +123,7 @@ class HelpersTests(unittest.TestCase):
         """
         Initialize test
         """
-        super(HelpersTests, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
 def generator(test_strings):
@@ -171,41 +148,88 @@ class HelpersZipTests(unittest.TestCase):
     """
     Test zip methods
     """
-    @unittest.skip('Not yet implemented')
     def test_make_zip(self):
         """
         Test makeZip
         """
-        pass
+        here = os.path.dirname(__file__)
+        files = [os.path.join(here, f) for f in os.listdir(here) if f[-3:] == ".py"]
+        zip_path = os.path.join(here, '_test.zip')
 
-    @unittest.skip('Not yet implemented')
+        self.assertTrue(helpers.makeZip(files, zip_path))
+        self.assertFalse(helpers.makeZip(files, '/:/_test.zip'))
+
+        if os.path.isfile(zip_path):
+            os.remove(zip_path)
+
     def test_extract_zip(self):
         """
         Test extractZip
         """
-        pass
+        here = os.path.dirname(__file__)
+        files = [os.path.join(here, f) for f in os.listdir(here) if f[-3:] == ".py"]
+        zip_path = os.path.join(here, '_test.zip')
 
-    @unittest.skip('Not yet implemented')
+        helpers.makeZip(files, zip_path)
+        extract_path = os.path.join(here, '_extract_test')
+        self.assertTrue(helpers.extractZip(zip_path, extract_path))
+        self.assertFalse(helpers.extractZip(zip_path, '/:/_extract'))
+        # Test skip directories:
+        files += [os.path.join(here, 'Logs')]
+        helpers.makeZip(files, zip_path)
+        self.assertTrue(helpers.extractZip(zip_path, extract_path))
+
+        if os.path.isfile(zip_path):
+            os.remove(zip_path)
+        if os.path.isdir(extract_path):
+            rmtree(extract_path)
+
     def test_backup_config_zip(self):
         """
-        Test backupConfigZip
+        Test backup_config_zip
         """
-        pass
+        here = os.path.dirname(__file__)
+        files = [os.path.join(here, f) for f in os.listdir(here) if f[-3:] in [".db", ".py"]]
+        zip_path = os.path.join(here, '_backup_test.zip')
 
-    @unittest.skip('Not yet implemented')
+        self.assertTrue(helpers.backup_config_zip(files, zip_path, here))
+        self.assertFalse(helpers.backup_config_zip(files, '/:/_backup_test.zip'))
+
+        if os.path.isfile(zip_path):
+            os.remove(zip_path)
+
     def test_restore_config_zip(self):
         """
-        Test restoreConfigZip
+        Test restore_config_zip
         """
-        pass
+        here = os.path.dirname(__file__)
+        files = [os.path.join(here, f) for f in os.listdir(here) if f[-3:] in [".db", ".py"]]
+        zip_path = os.path.join(here, '_backup_test.zip')
 
-    @unittest.skip('Not yet implemented')
+        helpers.backup_config_zip(files, zip_path, here)
+        restore_container = os.path.join(here, '_restore_tests')
+        os.mkdir(restore_container)
+        restore_path = os.path.join(restore_container, 'test')
+        self.assertFalse(helpers.restore_config_zip(files[1], restore_path))  # test invalid zip
+        self.assertTrue(helpers.restore_config_zip(zip_path, restore_path))
+        self.assertTrue(helpers.restore_config_zip(zip_path, restore_path)) # test extractDir exists
+
+        if os.path.isfile(zip_path):
+            os.remove(zip_path)
+        if os.path.isdir(restore_container):
+            rmtree(restore_container)
+
     def test_is_rar_file(self):
         """
-        Test isRarFile
+        Test is_rar_file
         """
-        pass
-
+        self.assertTrue(helpers.is_rar_file('lala.rar'))
+        self.assertFalse(helpers.is_rar_file('lala.zip'))
+        self.assertFalse(helpers.is_rar_file('lala.iso'))
+        self.assertFalse(helpers.is_rar_file('lala.wmv'))
+        self.assertFalse(helpers.is_rar_file('lala.avi'))
+        self.assertFalse(helpers.is_rar_file('lala.mkv'))
+        self.assertFalse(helpers.is_rar_file('lala.mp4'))
 
 class HelpersDirectoryTests(unittest.TestCase):
     """
@@ -239,13 +263,19 @@ class HelpersDirectoryTests(unittest.TestCase):
         """
         pass
 
-    @unittest.skip('Not yet implemented')
     def test_real_path(self):
         """
         Test real_path
         """
-        pass
+        self.assertEqual(helpers.real_path('/usr/SickChill/../root/real/path/'), helpers.real_path('/usr/root/real/path/'))
 
+    def test_is_subdirectory(self):
+        """
+        Test is_subdirectory
+        """
+        self.assertTrue(helpers.is_subdirectory(subdir_path='/usr/SickChill/Downloads/Unpack', topdir_path='/usr/SickChill/Downloads'))
+        self.assertTrue(helpers.is_subdirectory(subdir_path='/usr/SickChill/Downloads/testfile.tst', topdir_path='/usr/SickChill/Downloads/'))
+        self.assertFalse(helpers.is_subdirectory(subdir_path='/usr/SickChill/Unpack', topdir_path='/usr/SickChill/Downloads'))
 
 class HelpersFileTests(unittest.TestCase):
     """
@@ -254,7 +284,7 @@ class HelpersFileTests(unittest.TestCase):
 
     def test_is_media_file(self):
         """
-        Test isMediaFile
+        Test is_media_file
         """
         # TODO: Add unicode tests
         # TODO: Add MAC OS resource fork tests
@@ -265,11 +295,11 @@ class HelpersFileTests(unittest.TestCase):
         # and the file extension should be in the list of media extensions
 
         # Test all valid media extensions
-        temp_name = 'Show.Name.S01E01.HDTV.x264-RLSGROUP'
-        extension_tests = {'.'.join((temp_name, ext)): True for ext in media_extensions}
+        temp_name = 'Show.Name.S01E01.HDTV.x264-SICKCHILL'
+        extension_tests = {'.'.join((temp_name, ext)): True for ext in MEDIA_EXTENSIONS}
         # ...and some invalid ones
         other_extensions = ['txt', 'sfv', 'srr', 'rar', 'nfo', 'zip']
-        extension_tests.update({'.'.join((temp_name, ext)): False for ext in other_extensions + subtitle_extensions})
+        extension_tests.update({'.'.join((temp_name, ext)): False for ext in other_extensions + SUBTITLE_EXTENSIONS})
 
         # Samples should be ignored
         sample_tests = {  # Samples should be ignored, valid samples will return False
@@ -282,6 +312,9 @@ class HelpersFileTests(unittest.TestCase):
             'Show.Name.S01E01.HDTV.sample1.mkv': False,  # numbered samples are ok
             'Show.Name.S01E01.HDTV.sample12.mkv': False,  # numbered samples are ok
             'Show.Name.S01E01.HDTV.sampleA.mkv': True,  # samples should not be indexed alphabetically
+            'RARBG.mp4': False,
+            'rarbg.MP4': False,
+            '/TV/Sample.Show.Name.S01E01.HDTV-RARBG/RARBG.mp4': False
         }
 
         edge_cases = {
@@ -297,19 +330,12 @@ class HelpersFileTests(unittest.TestCase):
 
         for cur_test in extension_tests, sample_tests, edge_cases:
             for cur_name, expected_result in cur_test.items():
-                self.assertEqual(helpers.isMediaFile(cur_name), expected_result, cur_name)
+                self.assertEqual(helpers.is_media_file(cur_name), expected_result, cur_name)
 
     @unittest.skip('Not yet implemented')
     def test_is_file_locked(self):
         """
-        Test isFileLocked
-        """
-        pass
-
-    @unittest.skip('Not yet implemented')
-    def test_is_being_written(self):
-        """
-        Test isBeingWritten
+        Test is_file_locked
         """
         pass
 
@@ -323,7 +349,7 @@ class HelpersFileTests(unittest.TestCase):
     @unittest.skip('Not yet implemented')
     def test_list_media_files(self):
         """
-        Test listMediaFiles
+        Test list_media_files
         """
         pass
 
@@ -386,7 +412,7 @@ class HelpersFileTests(unittest.TestCase):
     @unittest.skip('Not yet implemented')
     def test_get_disk_space_usage(self):
         """
-        Test getDiskSpaceUsage
+        Test disk_usage
         """
         pass
 
@@ -449,12 +475,59 @@ class HelpersEncryptionTests(unittest.TestCase):
     """
     Test encryption and decryption
     """
-    @unittest.skip('Not yet implemented')
     def test_create_https_certificates(self):
         """
-        Test create_https_certificates
+        Test that create_https_certificates successfully generates certificate and private key
         """
-        pass
+        try:
+            import OpenSSL
+        except ImportError:
+            self.skipTest('pyOpenSSL is not installed')
+            return False
+
+        base_path = os.path.dirname(__file__)
+        cert_path = os.path.abspath(os.path.join(base_path, 'test.crt'))
+        pkey_path = os.path.abspath(os.path.join(base_path, 'test.key'))
+
+        def removeTestFiles():
+            try:
+                os.remove(cert_path)
+                os.remove(pkey_path)
+            except OSError:
+                pass
+
+        removeTestFiles()  # always remove existing
+        self.assertTrue(helpers.create_https_certificates(cert_path, pkey_path))
+        self.assertTrue(os.path.isfile(cert_path))
+        self.assertTrue(os.path.isfile(pkey_path))
+
+        FILETYPE_PEM = OpenSSL.crypto.FILETYPE_PEM
+        try:
+            with open(cert_path, 'rb') as f:
+                cert = OpenSSL.crypto.load_certificate(FILETYPE_PEM, f.read())
+        except Exception as error:
+            removeTestFiles()
+            self.fail('Unable to load certificate')
+
+        try:
+            with open(pkey_path, 'rb') as f:
+                pkey = OpenSSL.crypto.load_privatekey(FILETYPE_PEM, f.read())
+        except Exception as error:
+            removeTestFiles()
+            self.fail('Unable to load private key')
+
+        context = OpenSSL.SSL.Context(OpenSSL.SSL.TLSv1_METHOD)
+        context.use_privatekey(pkey)
+        context.use_certificate(cert)
+        failed = False
+        try:
+            context.check_privatekey()
+        except OpenSSL.SSL.Error:
+            failed = True
+        finally:
+            removeTestFiles()
+
+        self.assertFalse(failed, 'private key does not match certificate')
 
     @unittest.skip('Not yet implemented')
     def test_encrypt(self):
@@ -507,20 +580,6 @@ class HelpersShowTests(unittest.TestCase):
     def test_get_show(self):
         """
         Test get_show
-        """
-        pass
-
-    @unittest.skip('Not yet implemented')
-    def test_validate_show(self):
-        """
-        Test validateShow
-        """
-        pass
-
-    @unittest.skip('Not yet implemented')
-    def test_map_indexers_to_show(self):
-        """
-        Test mapIndexersToShow
         """
         pass
 
@@ -633,13 +692,6 @@ class HelpersMiscTests(unittest.TestCase):
         pass
 
     @unittest.skip('Not yet implemented')
-    def test_arithmetic_eval(self):
-        """
-        Test arithmeticEval
-        """
-        pass
-
-    @unittest.skip('Not yet implemented')
     def test_full_sanitize_scene_name(self):
         """
         Test full_sanitizeSceneName
@@ -659,6 +711,31 @@ class HelpersMiscTests(unittest.TestCase):
         Test pretty_time_delta
         """
         pass
+
+    def test_sortable_name(self):
+        """
+        Test that sortable_name returns the correct show name
+        """
+        cases = [
+            # raw_name, SORT_ARTICLE, expected
+            ('The Big Bang Theory', False, 'big bang theory'),
+            ('A Big World', False, 'big world'),
+            ('An Unexpected Journey', False, 'unexpected journey'),
+            ('The Big Bang Theory', True, 'the big bang theory'),
+            ('A Big World', True, 'a big world'),
+            ('An Unexpected Journey', True, 'an unexpected journey'),
+        ]
+        for raw_name, option, expected in cases:
+            settings.SORT_ARTICLE = option
+            self.assertEqual(helpers.sortable_name(raw_name), expected)
+
+    @unittest.skip('Not yet implemented')
+    def test_manage_torrents_url(self):
+        """
+        Test manage_torrents_url
+        """
+        pass
+
 
 if __name__ == '__main__':
     print("==================")
