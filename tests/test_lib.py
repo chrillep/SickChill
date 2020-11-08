@@ -1,25 +1,3 @@
-# coding=UTF-8
-# Author: Dennis Lutter <lad1337@gmail.com>
-
-# URL: http://code.google.com/p/sickbeard/
-#
-# This file is part of SickRage.
-#
-# SickRage is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# SickRage is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with SickRage. If not, see <http://www.gnu.org/licenses/>.
-
-# pylint: disable=line-too-long
-
 """
 Create a test database for testing.
 
@@ -34,47 +12,45 @@ Methods:
     teardown_test_show_dir
 
 Classes:
-    SickbeardTestDBCase
+    SickChillTestDBCase
     TestDBConnection
     TestCacheDBConnection
 """
 
 import os.path
 import shutil
-import sys
 import unittest
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '../lib')))
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 from configobj import ConfigObj
-from sickbeard import db, providers
-from sickbeard.databases import cache_db, failed_db, mainDB
-from sickbeard.providers.newznab import NewznabProvider
-from sickbeard.tv import TVEpisode
-import shutil_custom  # pylint: disable=import-error
-import sickbeard
 
-# pylint: disable=import-error
-
-shutil.copyfile = shutil_custom.copyfile_custom
+import sickchill.logger
+import sickchill.oldbeard.config
+import sickchill.oldbeard.tvcache
+import sickchill.start
+from sickchill import settings
+from sickchill.oldbeard import db, providers
+from sickchill.oldbeard.databases import cache, failed, main
+from sickchill.show.indexers import ShowIndexer
+from sickchill.tv import TVEpisode, TVShow
 
 # =================
 #  test globals
 # =================
 TEST_DIR = os.path.abspath(os.path.dirname(__file__))
-TEST_DB_NAME = "sickbeard.db"
+TEST_DB_NAME = "sickchill.db"
 TEST_CACHE_DB_NAME = "cache.db"
 TEST_FAILED_DB_NAME = "failed.db"
 
-SHOW_NAME = u"show name"
+SHOW_NAME = "show name"
 SEASON = 4
 EPISODE = 2
-FILENAME = u"show name - s0" + str(SEASON) + "e0" + str(EPISODE) + ".mkv"
+FILENAME = "show name - s0" + str(SEASON) + "e0" + str(EPISODE) + ".mkv"
 FILE_DIR = os.path.join(TEST_DIR, SHOW_NAME)
 FILE_PATH = os.path.join(FILE_DIR, FILENAME)
 SHOW_DIR = os.path.join(TEST_DIR, SHOW_NAME + " final")
-
+PROCESSING_DIR = os.path.join(TEST_DIR, 'Downloads')
+NUM_SEASONS = 5
+EPISODES_PER_SEASON = 20
 
 # =================
 #  prepare env functions
@@ -83,57 +59,59 @@ def create_test_log_folder():
     """
     Create a log folder for test logs.
     """
-    if not os.path.isdir(sickbeard.LOG_DIR):
-        os.mkdir(sickbeard.LOG_DIR)
+    if not os.path.isdir(settings.LOG_DIR):
+        os.mkdir(settings.LOG_DIR)
 
 
 def create_test_cache_folder():
     """
     Create a cache folder for caching tests.
     """
-    if not os.path.isdir(sickbeard.CACHE_DIR):
-        os.mkdir(sickbeard.CACHE_DIR)
+    if not os.path.isdir(settings.CACHE_DIR):
+        os.mkdir(settings.CACHE_DIR)
 
-# call env functions at appropriate time during SickBeard var setup
+# call env functions at appropriate time during SickChill var setup
 
 # =================
-#  SickBeard globals
+#  SickChill globals
 # =================
-sickbeard.SYS_ENCODING = 'UTF-8'
-
-sickbeard.showList = []
-sickbeard.QUALITY_DEFAULT = 4  # hdtv
-sickbeard.FLATTEN_FOLDERS_DEFAULT = 0
-
-sickbeard.NAMING_PATTERN = ''
-sickbeard.NAMING_ABD_PATTERN = ''
-sickbeard.NAMING_SPORTS_PATTERN = ''
-sickbeard.NAMING_MULTI_EP = 1
 
 
-sickbeard.PROVIDER_ORDER = ["sick_beard_index"]
-sickbeard.newznabProviderList = NewznabProvider.get_providers_list("'Sick Beard Index|http://lolo.sickbeard.com/|0|5030,5040|0|eponly|0|0|0!!!NZBs.org|https://nzbs.org/||5030,5040,5060,5070,5090|0|eponly|0|0|0!!!Usenet-Crawler|https://www.usenet-crawler.com/||5030,5040,5060|0|eponly|0|0|0'")
-sickbeard.providerList = providers.makeProviderList()
+settings.showList = []
+settings.QUALITY_DEFAULT = 4  # hdtv
+settings.SEASON_FOLDERS_DEFAULT = 0
 
-sickbeard.PROG_DIR = os.path.abspath(os.path.join(TEST_DIR, '..'))
-sickbeard.DATA_DIR = TEST_DIR
-sickbeard.CONFIG_FILE = os.path.join(sickbeard.DATA_DIR, "config.ini")
-sickbeard.CFG = ConfigObj(sickbeard.CONFIG_FILE)
+settings.NAMING_PATTERN = ''
+settings.NAMING_ABD_PATTERN = ''
+settings.NAMING_SPORTS_PATTERN = ''
+settings.NAMING_MULTI_EP = 1
 
-sickbeard.BRANCH = sickbeard.config.check_setting_str(sickbeard.CFG, 'General', 'branch', '')
-sickbeard.CUR_COMMIT_HASH = sickbeard.config.check_setting_str(sickbeard.CFG, 'General', 'cur_commit_hash', '')
-sickbeard.GIT_USERNAME = sickbeard.config.check_setting_str(sickbeard.CFG, 'General', 'git_username', '')
-sickbeard.GIT_PASSWORD = sickbeard.config.check_setting_str(sickbeard.CFG, 'General', 'git_password', '', censor_log=True)
+settings.TV_DOWNLOAD_DIR = PROCESSING_DIR
 
-sickbeard.LOG_DIR = os.path.join(TEST_DIR, 'Logs')
-sickbeard.logger.log_file = os.path.join(sickbeard.LOG_DIR, 'test_sickbeard.log')
+# settings.PROVIDER_ORDER = ["sick_beard_index"]
+# settings.newznabProviderList = NewznabProvider.providers_list("'Sick Beard Index|http://lolo.sickbeard.com/|0|5030,5040|0|eponly|0|0|0!!!Usenet-Crawler|https://www.usenet-crawler.com/||5030,5040,5060|0|eponly|0|0|0'")
+settings.providerList = providers.makeProviderList()
+
+settings.DATA_DIR = TEST_DIR
+settings.CONFIG_FILE = os.path.join(settings.DATA_DIR, "config.ini")
+settings.CFG = ConfigObj(settings.CONFIG_FILE, encoding='UTF-8', indent_type='  ')
+settings.GUI_NAME = 'slick'
+
+settings.BRANCH = sickchill.oldbeard.config.check_setting_str(settings.CFG, 'General', 'branch')
+settings.CUR_COMMIT_HASH = sickchill.oldbeard.config.check_setting_str(settings.CFG, 'General', 'cur_commit_hash')
+settings.GIT_USERNAME = sickchill.oldbeard.config.check_setting_str(settings.CFG, 'General', 'git_username')
+settings.GIT_TOKEN = sickchill.oldbeard.config.check_setting_str(settings.CFG, 'General', 'git_token_password', censor_log=True)
+
+settings.LOG_DIR = os.path.join(TEST_DIR, 'Logs')
+sickchill.logger.log_file = os.path.join(settings.LOG_DIR, 'test_sickchill.log')
 create_test_log_folder()
 
-sickbeard.CACHE_DIR = os.path.join(TEST_DIR, 'cache')
+settings.CACHE_DIR = os.path.join(TEST_DIR, 'cache')
 create_test_cache_folder()
 
-# pylint: disable=no-member
-sickbeard.logger.init_logging(False, True)
+sickchill.logger.init_logging(False, True)
+
+sickchill.indexer = ShowIndexer()
 
 
 # =================
@@ -141,15 +119,16 @@ sickbeard.logger.init_logging(False, True)
 # =================
 def _dummy_save_config():
     """
-    Override the SickBeard save_config which gets called during a db upgrade.
+    Override the SickChill save_config which gets called during a db upgrade.
 
     :return: True
     """
     return True
 
-# this overrides the SickBeard save_config which gets called during a db upgrade
+
+# this overrides the SickChill save_config which gets called during a db upgrade
 # this might be considered a hack
-mainDB.sickbeard.save_config = _dummy_save_config
+sickchill.start.save_config = _dummy_save_config
 
 
 def _fake_specify_ep(self, season, episode):
@@ -170,7 +149,7 @@ TVEpisode.specifyEpisode = _fake_specify_ep
 # =================
 #  test classes
 # =================
-class SickbeardTestDBCase(unittest.TestCase):
+class SickChillTestDBCase(unittest.TestCase):
     """
     Superclass for testing the database.
 
@@ -179,65 +158,85 @@ class SickbeardTestDBCase(unittest.TestCase):
         tearDown
     """
     def setUp(self):
-        sickbeard.showList = []
+        settings.showList = []
         setup_test_db()
         setup_test_episode_file()
         setup_test_show_dir()
 
     def tearDown(self):
-        sickbeard.showList = []
+        settings.showList = []
         teardown_test_db()
         teardown_test_episode_file()
         teardown_test_show_dir()
+
+
+class SickChillTestPostProcessorCase(unittest.TestCase):
+    """
+    Superclass for testing the database.
+
+    Methods:
+        setUp
+        tearDown
+    """
+    def setUp(self):
+        settings.showList = []
+        setup_test_db()
+        setup_test_episode_file()
+        setup_test_show_dir()
+        setup_test_processing_dir()
+
+        self.show = TVShow(1, 1, 'en')
+        self.show.name = SHOW_NAME
+        self.show.location = FILE_DIR
+        self.show.imdb_info = {'indexer_id': self.show.indexerid, 'imdb_id': 'tt000000'}
+
+        self.show.episodes = {}
+        for season in range(1, NUM_SEASONS):
+            self.show.episodes[season] = {}
+            for episode in range(1, EPISODES_PER_SEASON):
+                if season == SEASON and episode == EPISODE:
+                    episode = TVEpisode(self.show, season, episode, ep_file=FILE_PATH)
+                else:
+                    episode = TVEpisode(self.show, season, episode)
+                self.show.episodes[season][episode] = episode
+                episode.saveToDB()
+
+        self.show.saveToDB()
+        settings.showList = [self.show]
+
+    def tearDown(self):
+        settings.showList = []
+        self.show.deleteShow(True)
+        teardown_test_db()
+        teardown_test_episode_file()
+        teardown_test_show_dir()
+        teardown_test_processing_dir()
 
 
 class TestDBConnection(db.DBConnection, object):
     """
     Test connecting to the database.
     """
-    def __init__(self, db_file_name=TEST_DB_NAME):
-        db_file_name = os.path.join(TEST_DIR, db_file_name)
-        super(TestDBConnection, self).__init__(db_file_name)
+
+    def __init__(self, filename=TEST_DB_NAME, suffix=None, row_type=None):
+        if TEST_DIR not in filename:
+            filename = os.path.join(TEST_DIR, filename)
+        super().__init__(filename=filename, suffix=suffix, row_type=row_type)
 
 
 class TestCacheDBConnection(TestDBConnection, object):
     """
     Test connecting to the cache database.
     """
-    def __init__(self, provider_name):
-        # pylint: disable=non-parent-init-called
-        db.DBConnection.__init__(self, os.path.join(TEST_DIR, TEST_CACHE_DB_NAME))
+    def __init__(self, filename=TEST_CACHE_DB_NAME, suffix=None, row_type='dict'):
+        if TEST_DIR not in filename:
+            filename = os.path.join(TEST_DIR, filename)
+        super().__init__(filename=filename, suffix=suffix, row_type=row_type)
 
-        # Create the table if it's not already there
-        try:
-            if not self.hasTable(provider_name):
-                sql = "CREATE TABLE [" + provider_name + "] (name TEXT, season NUMERIC, episodes TEXT, indexerid NUMERIC, url TEXT, time NUMERIC, quality TEXT, release_group TEXT)"
-                self.connection.execute(sql)
-                self.connection.commit()
-        # pylint: disable=broad-except
-        # Catching too general exception
-        except Exception as error:
-            if str(error) != "table [" + provider_name + "] already exists":
-                raise
-
-            # add version column to table if missing
-            if not self.hasColumn(provider_name, 'version'):
-                self.addColumn(provider_name, 'version', "NUMERIC", "-1")
-
-        # Create the table if it's not already there
-        try:
-            sql = "CREATE TABLE lastUpdate (provider TEXT, time NUMERIC);"
-            self.connection.execute(sql)
-            self.connection.commit()
-        # pylint: disable=broad-except
-        # Catching too general exception
-        except Exception as error:
-            if str(error) != "table lastUpdate already exists":
-                raise
 
 # this will override the normal db connection
-sickbeard.db.DBConnection = TestDBConnection
-sickbeard.tvcache.CacheDBConnection = TestCacheDBConnection
+sickchill.oldbeard.db.DBConnection = TestDBConnection
+sickchill.oldbeard.tvcache.CacheDBConnection = TestCacheDBConnection
 
 
 # =================
@@ -249,23 +248,23 @@ def setup_test_db():
     """
     # Upgrade the db to the latest version.
     # upgrading the db
-    db.upgradeDatabase(db.DBConnection(), mainDB.InitialSchema)
+    db.upgrade_database(db.DBConnection(), main.InitialSchema)
 
     # fix up any db problems
-    db.sanityCheckDatabase(db.DBConnection(), mainDB.MainSanityCheck)
+    db.sanity_check_database(db.DBConnection(), main.MainSanityCheck)
 
     # and for cache.db too
-    db.upgradeDatabase(db.DBConnection('cache.db'), cache_db.InitialSchema)
+    db.upgrade_database(db.DBConnection('cache.db'), cache.InitialSchema)
 
     # and for failed.db too
-    db.upgradeDatabase(db.DBConnection('failed.db'), failed_db.InitialSchema)
+    db.upgrade_database(db.DBConnection('failed.db'), failed.InitialSchema)
 
 
 def teardown_test_db():
     """
     Tear down the test database.
     """
-    from sickbeard.db import db_cons
+    from sickchill.oldbeard.db import db_cons
     for connection in db_cons:
         db_cons[connection].commit()
     #     db_cons[connection].close()
@@ -277,7 +276,7 @@ def teardown_test_db():
     #            os.remove(file_name)
     #        except Exception as e:
     #            print 'ERROR: Failed to remove ' + file_name
-    #            print exception(e)
+    #            print(exception(e))
 
 
 def setup_test_episode_file():
@@ -288,14 +287,32 @@ def setup_test_episode_file():
         os.makedirs(FILE_DIR)
 
     try:
-        with open(FILE_PATH, 'wb') as ep_file:
+        with open(FILE_PATH, 'w') as ep_file:
             ep_file.write("foo bar")
             ep_file.flush()
-    # pylint: disable=broad-except
+
     # Catching too general exception
     except Exception:
-        print "Unable to set up test episode"
+        print("Unable to set up test episode")
         raise
+
+
+def setup_test_processing_dir():
+    if not os.path.exists(PROCESSING_DIR):
+        os.makedirs(PROCESSING_DIR)
+
+    for season in range(1, NUM_SEASONS):
+        for episode in range(11, EPISODES_PER_SEASON):
+            path = os.path.join(PROCESSING_DIR, '{show_name}.S0{season}E{episode}.HDTV.x264.[SickChill].mkv'.format(
+                show_name=SHOW_NAME, season=season, episode=episode))
+            with open(path, 'w') as ep_file:
+                ep_file.write("foo bar")
+                ep_file.flush()
+
+
+def teardown_test_processing_dir():
+    if os.path.exists(PROCESSING_DIR):
+        shutil.rmtree(PROCESSING_DIR)
 
 
 def teardown_test_episode_file():

@@ -1,0 +1,271 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+      Accept-Encoding:
+      - gzip, deflate
+      Accept-Language:
+      - en-US,en;q=0.5
+      User-Agent:
+      - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML,
+        like Gecko) Chrome/41.0.2227.1 Safari/537.36
+    method: GET
+    uri: http://torrentapi.org/pubapi_v2.php?get_token=get_token&format=json&app_id=sickchill
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA6tWKsnPTs1TslLKsyhOyk00tEw2VaoFANiHPKwWAAAA
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 5b248cdffd4ee11a-IAD
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 13 Jul 2020 16:58:42 GMT
+      Server:
+      - cloudflare
+      Set-Cookie:
+      - __cfduid=dc0bc32fedb96bde3f2c032a1641bad261594659522; expires=Wed, 12-Aug-20
+        16:58:42 GMT; path=/; domain=.torrentapi.org; HttpOnly; SameSite=Lax
+      - __cf_bm=14ba0218df51a99b80f593322572d830aad7663a-1594659522-1800-AXCTqDB/mhdX4oju08oQa6H2o6IVbHh0pq2lA4QIZmFDW6x+QDSfa0G4fUhF19BaondL9rQMRDAFWd6AZNVMc6o=;
+        path=/; expires=Mon, 13-Jul-20 17:28:42 GMT; domain=.torrentapi.org; HttpOnly;
+        SameSite=None
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      cf-request-id:
+      - 03eab65ff80000e11a7c018200000001
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+      Accept-Encoding:
+      - gzip, deflate
+      Accept-Language:
+      - en-US,en;q=0.5
+      Cookie:
+      - __cf_bm=14ba0218df51a99b80f593322572d830aad7663a-1594659522-1800-AXCTqDB/mhdX4oju08oQa6H2o6IVbHh0pq2lA4QIZmFDW6x+QDSfa0G4fUhF19BaondL9rQMRDAFWd6AZNVMc6o=;
+        __cfduid=dc0bc32fedb96bde3f2c032a1641bad261594659522
+      User-Agent:
+      - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML,
+        like Gecko) Chrome/41.0.2227.1 Safari/537.36
+    method: GET
+    uri: http://torrentapi.org/pubapi_v2.php?app_id=sickchill&category=tv&min_seeders=0&min_leechers=0&limit=100&format=json_extended&ranked=0&token=n8sbma19c5&sort=last&mode=list
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA6tWSi0qyi9SslLyy1coSi0uzSkpVkjLL81LUdKBSMUn56ekKlkZGdQCAMvCFuUs
+        AAAA
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 5b248ced5cafe11a-IAD
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 13 Jul 2020 16:58:44 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      cf-request-id:
+      - 03eab668550000e11a7c098200000001
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+      Accept-Encoding:
+      - gzip, deflate
+      Accept-Language:
+      - en-US,en;q=0.5
+      Cookie:
+      - __cf_bm=14ba0218df51a99b80f593322572d830aad7663a-1594659522-1800-AXCTqDB/mhdX4oju08oQa6H2o6IVbHh0pq2lA4QIZmFDW6x+QDSfa0G4fUhF19BaondL9rQMRDAFWd6AZNVMc6o=;
+        __cfduid=dc0bc32fedb96bde3f2c032a1641bad261594659522
+      User-Agent:
+      - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML,
+        like Gecko) Chrome/41.0.2227.1 Safari/537.36
+    method: GET
+    uri: http://torrentapi.org/pubapi_v2.php?app_id=sickchill&category=tv&min_seeders=0&min_leechers=0&limit=100&format=json_extended&ranked=0&token=n8sbma19c5&sort=seeders&mode=search&search_string=The+100+S07E08
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA+2Y/U/jNhjH/xUUCX4ZF+zHfvwSCZ24wcakjU3jxKQdp8ixHRpBkyp1GRvif58T
+        SktvoQfabRKnVq3S+PVb+/N8+zi3SWja1tchb/10dhWmSfbhNglVuPJJlrwf+ZQSkp4SeURUKoFM
+        0uPD92fpDQj+5uDs9ENr2nD9MdlNrAn+omn/7HqdbR0fbh1Nqmnj/DTWueaP+qoxLtaNzUXtQ/b2
+        JuzP2jorQjXKZEmBMsMFLyijFj1TpTFc+UKDVSV1xKEqQO24ev+zirbxXa9pGw93Qrs/CmGyzQ62
+        4bv4Dq2xl75N59eyukltM47VisRaU9fNrLa+6zZzy146jQMWF+nYxyKQlDzVIDRPNGgmvk6dHzd1
+        Vc1npIzJR3PGRZp673wb119z2E2uvLej/pZSHiurv+J+aJCacSBkN5nMChdXPK4oECBviHxD9Bah
+        GSEZ51vfkPiKY/r7PcirumyS7Dapxq6IXUIAISjhPDYJ16256MZhXErSF/RtQCjU0N2PovDryvel
+        XCkhYqGp2k+nV/189WwcC1X/e8y0qe/vZTfOnKmD2timdia5201aU1/6iAXdTTqJ+eReSrdp0+x8
+        73xvDqeZVGnTXpzvtd5VrbchD03/o9LJaPI2NJe+3q/VtBgbqi3uTPYhh1zkLOc55jLPl4TFWZ/E
+        mxIVafrt6F163MP0Y/X9yRcBvFQoSiGcsMpKZTUIYJZZVGXBpC6l47SM2nAA8CFNrx9xAXQFccAH
+        xAEVKsU1U08xzjOUGW4Yf8S4jpTnS8jWMb70ytOzg6fgfj7Z3hTIDIsLJwvPCSVeMu6KoisrtDVS
+        W18qcANkryh5/UjzjuEl0gALoiWBaNpCrDVtFBugH5u2yvMlW+uAflA2d8qDn34/6ezy12qSHh7+
+        gim9Z+xbMz0NM1c1X8TQhXEEomphLZPCaKmFLQgBp7UGKsuYrdhSUjaA/Uv1vv7IALVi9kwvIkOT
+        6BiMCjoUGpR0Xs91RtQmNO5Dg8fg0PGaL/lbFxpzrHqefvj5hJJ/YfToOGqNCEqVkXghpCK0KDVz
+        2jpaCIEMY+pOB4j/h4zXyvEnDr/IWTgjkXGEwbS8wxizzuQ3Dr/AmOckfvIlVOsw7s94/0FW7rRy
+        jBgo0TJK0RQMNHKqZRkhRxX3wmovB5EekPT6fZpyXE3KH/hWhAuM/2Z6TUouMsQN349T8sj3krDP
+        2PQz0H4B14JpwbxgKHQJwhok8ZsnjhruvEUXeRfgYNiqvy6kQa0+SllYNgUppCDrTpkig80pcwVp
+        FpFewPWspLw3yv8nJ0dXOEQUglll0XBZKCapAiuEsg7BUEVd4YcesrxQ7lcQF2TF6sVDWFDGKTKI
+        R5i1GTmQTVw8zshll8o80Jfcfbz7G2T4sndWFwAA
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 5b248cfada29f116-IAD
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 13 Jul 2020 16:58:47 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      cf-request-id:
+      - 03eab670c50000f1162a87a200000001
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+      Accept-Encoding:
+      - gzip, deflate
+      Accept-Language:
+      - en-US,en;q=0.5
+      Cookie:
+      - __cf_bm=14ba0218df51a99b80f593322572d830aad7663a-1594659522-1800-AXCTqDB/mhdX4oju08oQa6H2o6IVbHh0pq2lA4QIZmFDW6x+QDSfa0G4fUhF19BaondL9rQMRDAFWd6AZNVMc6o=;
+        __cfduid=dc0bc32fedb96bde3f2c032a1641bad261594659522
+      User-Agent:
+      - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML,
+        like Gecko) Chrome/41.0.2227.1 Safari/537.36
+    method: GET
+    uri: http://torrentapi.org/pubapi_v2.php?app_id=sickchill&category=tv&min_seeders=0&min_leechers=0&limit=100&format=json_extended&ranked=0&token=n8sbma19c5&sort=seeders&mode=search&search_string=The+100+S05
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA6tWSi0qyi9SslLyy1coSi0uzSkpVkjLL81LUdKBSMUn56ekKlkZGdQCAMvCFuUs
+        AAAA
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 5b248d21bf13e0aa-IAD
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 13 Jul 2020 16:58:53 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      cf-request-id:
+      - 03eab6890f0000e0aa3893d200000001
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
+      Accept-Encoding:
+      - gzip, deflate
+      Accept-Language:
+      - en-US,en;q=0.9
+      Cookie:
+      - __cfduid=dc0bc32fedb96bde3f2c032a1641bad261594659522
+      User-Agent:
+      - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML,
+        like Gecko) Chrome/36.0.1944.0 Safari/537.36
+    method: GET
+    uri: http://torrentapi.org/pubapi_v2.php?app_id=sickchill&category=tv&min_seeders=0&min_leechers=0&limit=100&format=json_extended&ranked=0&token=n8sbma19c5&sort=seeders&mode=search&search_string=The.100.S07E08
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA+2YfU/jRhCHvwqyBP8UzL7NvlhCJ67QUulKq3KiUo+Ttd5dEwtiW45DaRHfvWOT
+        kKQ1OVCvlUCJEjn7/tvdZ0YzvovaqmlC2aZNmEyv20mUfLqL2qK9DlESfRyFmBISnxF1THSsGKnj
+        k6OP5/Etk2Lv8PzsU2Ob9uZztBs524bLqvmjG3W+dXK0dVwXk8qHCbb56vfyurIe28b2sgxt8u62
+        PZg2ZZK1xShROWWUWyFFRjl1ELjOrRU6ZIY5nVNPPOiM6R1fHnxR0Ta87zVtw9FO2xyM2rbe5ofb
+        7Dv8to11V6GJZ8+8uI1dNcZmTbDVlmU1LV3ohk39YpSJccLsMh4HrGKKkqc6tNUTHao6lLEP46os
+        itmKlHO1tCYe0iQEHxo8fw56N7oOwY36IqPYVvyJ12GYMlwwQnajepp5PHA8UEYY2SNqj5gtQhNC
+        EiG2viH4wSnDwxWkRZlXUXIXFWOf4ZC2ZVJSIgR2aW8ae9nNw4VSpK/o+zCpwbCuPELdN0Xoa4XW
+        UmKlLZq/L6/79crpGCt1vx07qcqHsurmmSF1WFpXld5G97tRY8urgFTgDjuJaf0gpbuzSXKxf7E/
+        Y9PWRVw1lxf7TfBFE1ybtlW/qbge1e/a6iqUB6WeZGNLjYOd+oClLJUpT0UKqUrTBWC46pN0U6IR
+        pl+P38cnPUsfiu9PvwrfuQaZS+ml005pZ5hk3HEHOs+4MrnyguaoDQb4HtL0+glnnK0QzuaEM9Cg
+        tTBcP4W4SEAlsEF8CXGDkKcLxtYhPlc24+rwx99OO7h+Ker46OhniOmDG/3WTs7aqS+qr4K/tJ4w
+        VC2d40pao4x0GSHMG2MYVTm6dpcrygfwf6ne128aFMyyacCjZRhCKOFU0iHLoKSzDGESojeW8WAZ
+        Am3D4DNd4LfOMhYxxNn54VPYP5/5YDPgluPBqSwIvLmguPBZ1tVlxlllXMg18wPMryh5A0ALsQy0
+        eQRaEYbBjJRrgxmQG56Xgxmdpgu01vE885I9Rz/8dErJv4AZvABjAJjWOTpwKZUmNMsN98Z5mkkJ
+        HDBspwMw/0PGK6VYy2WI9RxiwQnTFNhgRN45ZUg6jjcQPzplkRL8pQuk1kHcZ3f/QUDujfacWJaD
+        45SCzTgzIKhROSIOGu/CmaAGgR6Q9Pp9NKzQzed0ayIkYGBm1gTjMgHY0L0cjCPdC76+4KKfAfYL
+        qJbcSB4kB2lyJp0Fgv8C8dQKHxx4pF0yz4bd9JsCWqwE0eLRXVOmpJJkXXYpE7bJLleA5gj0I1rP
+        yi57J/n/JJfgMw8AUnKnHVihMs0V1cxJqZ0HZqmmPgtD71ZeKPcNWAVdeesytwrKBQXOMBVfm1oy
+        sjGL5dRSdVHMHL7o/vP9X4o+PllLFwAA
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 5b7d11e709fcc1e8-IAD
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Fri, 24 Jul 2020 10:48:38 GMT
+      Server:
+      - cloudflare
+      Set-Cookie:
+      - __cf_bm=6e199f0ed62fdfbd7df49d87a5e52693b05dbbd8-1595587718-1800-AZ+6cbMNOVt6Hl7Z6DAOtTKEjEpoTpu5XV5mahRYn7FdF7WyNFUywdnQ9WFZI5lZTbF2yphzQilnVf2fTQnrayM=;
+        path=/; expires=Fri, 24-Jul-20 11:18:38 GMT; domain=.torrentapi.org; HttpOnly;
+        SameSite=None
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Accept-Encoding
+      cf-request-id:
+      - 04220984690000c1e826a54200000001
+    status:
+      code: 200
+      message: OK
+version: 1

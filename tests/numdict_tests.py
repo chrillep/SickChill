@@ -1,33 +1,14 @@
-# coding=utf-8
-
-"""
-Unit Tests for sickbeard/numdict.py
-"""
-
-# pylint: disable=line-too-long
-
-import os.path
-import sys
 import unittest
+from collections import UserDict
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '../lib')))
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from sickbeard.numdict import NumDict
-
-PY3 = sys.version_info >= (3, )
-
-if PY3:
-    from collections import UserDict  # pylint: disable=no-name-in-module
-else:
-    from UserDict import UserDict
+from sickchill.oldbeard.numdict import NumDict
 
 
 class NumDictTest(unittest.TestCase):
     """
     Test the NumDict class
     """
-    def test_constructors(self):  # pylint: disable=too-many-locals, too-many-statements
+    def test_constructors(self):
         """
         Test NumDict constructors
         """
@@ -39,7 +20,7 @@ class NumDictTest(unittest.TestCase):
         dict_4 = {'3': 'Aardvark', '4': 'Ant'}  # Multiple numeric string keys
         dict_5 = {5: 'Cat', '6': 'Dog'}  # Mixed numeric and numeric string keys
         dict_6 = {1: None, '2': None}  # None as values
-        dict_7 = {None: 'Empty'}  # None as key
+        dict_7 = {0: 'Empty'}  # None as key
 
         # Construct NumDicts from dicts
         num_dict = NumDict()
@@ -64,7 +45,6 @@ class NumDictTest(unittest.TestCase):
         self.assertNotEqual(num_dict_5, dict_5)
         self.assertNotEqual(num_dict_6, dict_6)
 
-        # ...but None keys work just fine
         self.assertEqual(num_dict_7, dict_7)
 
         # Construct dicts from NumDicts
@@ -142,7 +122,7 @@ class NumDictTest(unittest.TestCase):
         self.assertIsInstance(num_dict_3.fromkeys('1 2'.split()), NumDict)
         self.assertIsInstance(num_dict_4.fromkeys('1 2'.split()), NumDict)
 
-    def test_repr(self):  # pylint: disable=too-many-locals
+    def test_repr(self):
         """
         Test representation of NumDicts
         """
@@ -154,7 +134,7 @@ class NumDictTest(unittest.TestCase):
         dict_4 = {'3': 'Aardvark', '4': 'Ant'}  # Multiple numeric string keys
         dict_5 = {5: 'Cat', '6': 'Dog'}  # Mixed numeric and numeric string keys
         dict_6 = {1: None, '2': None}  # None as values
-        dict_7 = {None: 'Empty'}  # None as key
+        dict_7 = {0: 'Empty'}  # None as key
 
         #  Construct NumDicts from dicts
         num_dict = NumDict()
@@ -175,7 +155,7 @@ class NumDictTest(unittest.TestCase):
             "{'3': 'Aardvark', '4': 'Ant'}",
             "{5: 'Cat', '6': 'Dog'}",
             "{1: None, '2': None}",
-            "{None: 'Empty'}",
+            "{0: 'Empty'}",
         )
 
         # Most representations of NumDicts should compare equal to dicts...
@@ -244,7 +224,7 @@ class NumDictTest(unittest.TestCase):
             for val_b in all_dicts:
                 self.assertEqual(val_a == val_b, len(val_a) == len(val_b))
 
-    def test_dict_access_and_mod(self):  # pylint: disable=too-many-locals, too-many-statements
+    def test_dict_access_and_mod(self):
         """
         Test num dict access and modification
         """
@@ -335,7 +315,7 @@ class NumDictTest(unittest.TestCase):
         self.assertNotEqual(my_num_dict_a, my_num_dict)
 
         # Test keys, items, values
-        self.assertEqual(sorted(num_dict_2.keys()), sorted(dict_2.keys()))
+        self.assertEqual(sorted(num_dict_2), sorted(dict_2))
         self.assertEqual(sorted(num_dict_2.items()), sorted(dict_2.items()))
         self.assertEqual(sorted(num_dict_2.values()), sorted(dict_2.values()))
 
@@ -383,7 +363,7 @@ class NumDictTest(unittest.TestCase):
         ikeys = []
         for k in num_dict_2:
             ikeys.append(k)
-        self.assertEqual(set(ikeys), set(num_dict_2.keys()))
+        self.assertEqual(set(ikeys), set(num_dict_2))
 
         # Test setdefault
         val = 1
@@ -426,7 +406,7 @@ class NumDictTest(unittest.TestCase):
             """
             subclass defines __missing__ method returning a value
             """
-            def __missing__(self, key):  # pylint: disable=no-self-use
+            def __missing__(self, key):
                 key = 42
                 return key
 
@@ -434,14 +414,14 @@ class NumDictTest(unittest.TestCase):
         self.assertEqual(num_dict_d[1], 2)
         self.assertEqual(num_dict_d[3], 4)
         self.assertNotIn(2, num_dict_d)
-        self.assertNotIn(2, num_dict_d.keys())
+        self.assertNotIn(2, num_dict_d)
         self.assertEqual(num_dict_d[2], 42)
 
         class NumDictE(NumDict):
             """
             subclass defines __missing__ method raising RuntimeError
             """
-            def __missing__(self, key):  # pylint: disable=no-self-use
+            def __missing__(self, key):
                 raise RuntimeError(key)
 
         num_dict_e = NumDictE()
@@ -486,8 +466,9 @@ class NumDictTest(unittest.TestCase):
             """
             subclass calls super classes __missing__ and modifies the value before returning it
             """
-            def __missing__(self, key):  # pylint: disable=arguments-differ
-                return super(NumDictH, self).__missing__(key) + 1
+
+            def __missing__(self, key):
+                return super().__missing__(key) + 1
 
         num_dict_h = NumDictH()
         self.assertEqual(num_dict_h[None], num_dict_d[None] + 1)

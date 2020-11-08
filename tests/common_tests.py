@@ -1,45 +1,16 @@
-# coding=utf-8
-
-"""
-Unit Tests for sickbeard/common.py
-
-Classes:
-    Quality
-        _getStatusStrings
-        combineQualities
-        splitQuality
-        nameQuality
-        scene_quality
-        qualityFromFileMeta
-        compositeStatus
-        qualityDownloaded
-        splitCompositeStatus
-        sceneQualityFromName
-        statusFromName
-    StatusStrings
-        statusStrings
-        __missing__
-        __contains__
-    OverView
-
-"""
-
 # TODO: Implement skipped tests
 
-import os.path
-import sys
 import unittest
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '../lib')))
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from sickbeard import common
+from sickchill import settings
+from sickchill.oldbeard import common
 
 
 class QualityStringTests(unittest.TestCase):
     """
     Test Case for strings in common.Quality
     """
+    settings.QUALITY_ALLOW_HEVC = True
     test_cases = {
         'sd_tv': [
             "Test.Show.S01E02.PDTV.XViD-GROUP",
@@ -95,7 +66,28 @@ class QualityStringTests(unittest.TestCase):
             "Test Show S01E02 720p WEB-DL AAC2 0 H 264-GROUP",
             "Test_Show.S01E02_720p_WEB-DL_AAC2.0_H264-GROUP",
             "Test.Show.S01E02.720p.WEB-DL.AAC2.0.H264-GROUP",
-            "Test.Show.S01E02.720p.iTunes.Rip.H264.AAC-GROUP"
+            "Test.Show.S01E02.720p.iTunes.Rip.H264.AAC-GROUP",
+            "Test.Show.S01E02.Episode.Name.Itunes.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.ItunesHD.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.ItunesUHD.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.720p.Itunes.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.720p.ItunesHD.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.720p.ItunesUHD.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.AMZN.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.Amazon.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.AmazonHD.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.AmazonUHD.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.720p.AMZN.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.720p.Amazon.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.720p.AmazonHD.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.720p.AmazonUHD.WEB-DL.x264",
+
+            # German dubs
+            "Test.Show.S01E02.Episode.Name.German.DD51.Synced.DL.iTunesHD.AVC",
+            "Test.Show.S01E02.Episode.Name.German.DD51.Synced.DL.AmazonHD.x264",
+            "Test.Show.S01E02.Episode.Name.German.Dubbed.DL.iTunesHD.x264",
+            "Test.Show.S01E02.Episode.Name.German.DD51.DL.NetflixHD.x264",
+            "Test.Show.S01E02.Episode.Name.German.DD51.DL.NetflixUHD.x264"
         ],
         'full_hd_web_dl': [
             "Test.Show.S01E02.1080p.WEB-DL-GROUP",
@@ -104,7 +96,21 @@ class QualityStringTests(unittest.TestCase):
             "Test.Show.S01E02.WEBRip.1080p.H264.AAC.2.0-GROUP",
             "Test.Show.S01E02.1080p.iTunes.H.264.AAC-GROUP",
             "Test Show S01E02 1080p iTunes H 264 AAC-GROUP",
-            "Test_Show_S01E02_1080p_iTunes_H_264_AAC-GROUP"
+            "Test_Show_S01E02_1080p_iTunes_H_264_AAC-GROUP",
+            "Test.Show.S01E02.Episode.Name.1080p.Itunes.WEB-DL.x264"
+            "Test.Show.S01E02.Episode.Name.1080p.ItunesHD.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.1080p.ItunesUHD.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.1080p.AMZN.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.1080p.Amazon.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.1080p.AmazonUHD.WEB-DL.x264",
+            "Test.Show.S01E02.Episode.Name.1080p.AmazonHD.WEB-DL.x264",
+
+            # German dubs
+            "Test.Show.S01E02.Episode.Name.German.DD51.Synced.DL.1080p.iTunesHD.AVC",
+            "Test.Show.S01E02.Episode.Name.German.DD51.Synced.DL.1080p.AmazonHD.x264",
+            "Test.Show.S01E02.Episode.Name.German.Dubbed.DL.1080p.iTunesHD.x264",
+            "Test.Show.S01E02.Episode.Name.German.DD51.DL.1080p.NetflixHD.x264",
+            "Test.Show.S01E02.Episode.Name.German.DD51.DL.1080p.NetflixUHD.x264"
         ],
         'hd_bluray': [
             "Test.Show.S01E02.720p.BluRay.x264-GROUP",
@@ -115,7 +121,7 @@ class QualityStringTests(unittest.TestCase):
             "Test.Show.S01E02.1080p.HDDVD.x264-GROUP"
         ],
         'unknown': [
-            "Test.Show.S01E02-SiCKBEARD",
+            "Test.Show.S01E02-SiCKCHILL",
             "Test.Show.S01E01-20.1080i.[Mux.-.1080i.-.H264.-.Ac3.].HDTVMux.GROUP",
         ],
     }
@@ -158,9 +164,9 @@ class QualityStringTests(unittest.TestCase):
         for name, tests in self.test_cases.items():
             for test in tests:
                 if name == cur_test:
-                    self.assertEqual(cur_qual, common.Quality.nameQuality(test))
+                    self.assertEqual(cur_qual, common.Quality.nameQuality(test), test)
                 else:
-                    self.assertNotEqual(cur_qual, common.Quality.nameQuality(test))
+                    self.assertNotEqual(cur_qual, common.Quality.nameQuality(test), test)
 
     def test_raw_hd_tv(self):
         """
@@ -172,9 +178,9 @@ class QualityStringTests(unittest.TestCase):
         for name, tests in self.test_cases.items():
             for test in tests:
                 if name == cur_test:
-                    self.assertEqual(cur_qual, common.Quality.nameQuality(test))
+                    self.assertEqual(cur_qual, common.Quality.nameQuality(test), test)
                 else:
-                    self.assertNotEqual(cur_qual, common.Quality.nameQuality(test))
+                    self.assertNotEqual(cur_qual, common.Quality.nameQuality(test), test)
 
     def test_full_hd_tv(self):
         """
@@ -301,7 +307,6 @@ class QualityTests(unittest.TestCase):
     """
 
     # TODO: repack / proper ? air-by-date ? season rip? multi-ep?
-    @unittest.expectedFailure
     # reverse parsing does not work
     def test_reverse_parsing(self):
         """
@@ -317,7 +322,7 @@ class QualityTests(unittest.TestCase):
             (common.Quality.FULLHDWEBDL, "Test Show - S01E02 - 1080p WEB-DL - GROUP"),
             (common.Quality.HDBLURAY, "Test Show - S01E02 - 720p BluRay - GROUP"),
             (common.Quality.FULLHDBLURAY, "Test Show - S01E02 - 1080p BluRay - GROUP"),
-            (common.Quality.UNKNOWN, "Test Show - S01E02 - Unknown - SiCKBEARD"),
+            (common.Quality.UNKNOWN, "Test Show - S01E02 - Unknown - SiCKCHILL"),
         ]
         for test in tests:
             quality, test = test
@@ -466,9 +471,9 @@ class OverviewTests(unittest.TestCase):
         self.assertEqual(overview.overviewStrings[overview.SNATCHED], "snatched")
 
 if __name__ == '__main__':
-    print "======================="
-    print "STARTING - COMMON TESTS"
-    print "======================="
+    print("=======================")
+    print("STARTING - COMMON TESTS")
+    print("=======================")
 
     SUITE = unittest.TestLoader().loadTestsFromTestCase(QualityStringTests)
     unittest.TextTestRunner(verbosity=2).run(SUITE)

@@ -1,14 +1,18 @@
 #  SR User Related   #
 ######################
 /cache/
+/gui/slick/cache
+/sickchill/gui/slick/cache
 /Logs/
 /data/
 restore/
 backup*/
 cache.db*
 config.ini*
+sickchill.db*
 sickbeard.db*
 failed.db*
+movies.db*
 autoProcessTV.cfg
 server.crt
 server.key
@@ -17,7 +21,7 @@ server.key
 ######################
 /tests/Logs/
 /tests/cache/
-/tests/sickbeard.db*
+/tests/sickchill.db*
 /tests/cache.db*
 /tests/failed.db
 /tests/data/
@@ -58,20 +62,44 @@ Thumbs.db
 
 # Unrar Executable   #
 ######################
-lib/unrar2/UnRAR.exe
+unrar/*
 
 # Grunt #
 ######################
-.build/bower_components
-.build/node_modules
-.build/dist
+bower_components
+node_modules
+dist
+package-lock.json
 
 # Unit test/Coverage #
 ######################
-.tox/
+.tox
 .coverage
 htmlcov
 
 # nzbToMedia #
 ######################
 contrib/nzbToMedia
+
+# setup.py #
+######################
+*.egg-info
+.eggs
+build
+
+# virtualenv #
+venv
+
+# diffs
+/*.diff
+
+/genchanges.sh
+/Downloads
+
+**/*.so
+lib[23]/bin
+lib[23]/.libs_cffi_backend
+lib[23]/bin
+lib[23]/.libs_cffi_backend
+lib[23]/cffi.libs
+atlassian-ide-plugin.xml
