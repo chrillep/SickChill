@@ -21,7 +21,7 @@ module.exports = function(grunt) {
         grunt.task.run([
             'exec:git:checkout:master',
             'default', // Run default task
-            'update_trans', // Update translations
+            'exec:update_translations', // Update translations
             'exec:commit_changed_files:yes', // Determine what we need to commit if needed, stop if nothing to commit.
             'exec:git:reset --hard', // Reset unstaged changes (to allow for a rebase)
             'exec:git:checkout:develop', 'exec:git:rebase:master', // FF develop to the updated master
@@ -29,29 +29,11 @@ module.exports = function(grunt) {
         ]);
     });
 
-    grunt.registerTask('update_trans', 'Update translations', function() {
-        grunt.log.writeln('Updating translations...'.magenta);
-        var tasks = [
-            'exec:babel_extract',
-            'exec:babel_update',
-            // + crowdin
-            'exec:babel_compile',
-            'po2json'
-        ];
-        if (process.env.CROWDIN_API_KEY) {
-            tasks.splice(2, 0, 'exec:crowdin_upload', 'exec:crowdin_download'); // insert items at index 2
-        } else {
-            grunt.log.warn('Environment variable `CROWDIN_API_KEY` is not set, not syncing with Crowdin.'.bold);
-        }
-
-        grunt.task.run(tasks);
-    });
-
     /****************************************
     *  Admin only tasks                     *
     ****************************************/
     grunt.registerTask('publish', 'ADMIN: Create a new release tag and generate new CHANGES.md', [
-        'exec:test', // Run tests
+        // 'exec:test', // Run tests
         'newrelease', // Pull and merge develop to master, create and push a new release
         'genchanges' // Update CHANGES.md
     ]);
@@ -112,6 +94,7 @@ module.exports = function(grunt) {
                 mainFiles: {
                     'tablesorter': [
                         'dist/js/jquery.tablesorter.combined.min.js',
+                        'dist/js/parsers/parser-metric.min.js',
                         'dist/js/widgets/widget-columnSelector.min.js',
                         'dist/css/theme.blue.min.css'
                     ],
@@ -240,11 +223,7 @@ module.exports = function(grunt) {
         },
         exec: {
             // Translations
-            'babel_extract': {cmd: 'python setup.py extract_messages'},
-            'babel_update': {cmd: 'python setup.py update_catalog'},
-            'crowdin_upload': {cmd: 'crowdin-cli-py upload sources'},
-            'crowdin_download': {cmd: 'crowdin-cli-py download'},
-            'babel_compile': {cmd: 'python setup.py compile_catalog'},
+            'update_translations': {cmd: 'poe update_translations'},
 
             // Run tests
             'test': {cmd: 'yarn run test || npm run test'},
@@ -319,11 +298,11 @@ module.exports = function(grunt) {
                 }
             },
             'git_get_last_tag': {
-                cmd: 'git for-each-ref --sort=-refname --count=1 --format "%(refname:short)" refs/tags/v20[0-9][0-9]*',
+                cmd: 'git for-each-ref --sort=-refname --count=1 --format "%(refname:lstrip=2)" refs/tags/20[0-9][0-9].[0-9][0-9].[0-9][0-9]*',
                 stdout: false,
                 callback: function(err, stdout) {
                     stdout = stdout.trim();
-                    if (/^v\d{4}.\d{1,2}.\d{1,2}.\d+$/.test(stdout)) {
+                    if (/^\d{4}.\d{1,2}.\d{1,2}(.\d+)?$/.test(stdout)) {
                         grunt.config('last_tag', stdout);
                         grunt.log.write(stdout);
                     } else {
@@ -371,7 +350,7 @@ module.exports = function(grunt) {
             'git_list_tags': {
                 cmd: 'git for-each-ref --sort=refname ' +
                         '--format="%(refname:short)|||%(objectname)|||%(contents)\xB6\xB6\xB6" ' +
-                        'refs/tags/v20[0-9][0-9]*',
+                        'refs/tags/20[0-9][0-9].[0-9][0-9].[0-9][0-9]* refs/tags/v202[0-1].[0-9][0-9].[0-9][0-9]*',
                 stdout: false,
                 callback: function(err, stdout) {
                     if (!stdout) {
@@ -434,12 +413,14 @@ module.exports = function(grunt) {
         grunt.config.requires('last_tag');
         var lastTag = grunt.config('last_tag');
 
-        var lastPatch = lastTag.match(/[0-9]+$/)[0];
+        var lastPatch = lastTag.match(/-[0-9]+$/);
         lastTag = grunt.template.date(lastTag.replace(/^v|-[0-9]*-?$/g, ''), 'yyyy.mm.dd');
-        var today = grunt.template.today('yyyy.mm.dd');
-        var patch = lastTag === today ? (parseInt(lastPatch) + 1).toString() : '1';
+        var nextTag = grunt.template.today('yyyy.mm.dd');
+        if (lastTag === nextTag) {
+            nextTag += '-';
+            nextTag += lastPatch ? (parseInt(lastPatch[0].slice(1)) + 1).toString() : '1';
+        }
 
-        var nextTag = 'v' + today + '-' + patch;
         grunt.log.ok(('Creating tag ' + nextTag).green);
         grunt.config('next_tag', nextTag);
     });
