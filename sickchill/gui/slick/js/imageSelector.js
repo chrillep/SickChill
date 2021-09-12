@@ -1,34 +1,32 @@
 (function ($) {
-    'use strict';
-
     const SIZES_BY_TYPE = {
         poster: {
             minHeight: 269,
             ratio: 40 / 57,
             validate(img) {
-                return img.height >= this.minHeight &&
-                    img.width / img.height === this.ratio;
+                return img.height >= this.minHeight
+                    && img.width / img.height === this.ratio;
             },
-            errorMsg: 'The height of the poster can not be lower than 269 pixels and the aspect ratio should be 40:57.'
+            errorMsg: 'The height of the poster can not be lower than 269 pixels and the aspect ratio should be 40:57.',
         },
         banner: {
             minHeight: 37,
             ratio: 200 / 37,
             validate(img) {
-                return img.height >= this.minHeight &&
-                    img.width / img.height === this.ratio;
+                return img.height >= this.minHeight
+                    && img.width / img.height === this.ratio;
             },
-            errorMsg: 'The height of the banner can not be lower than 37 pixels and the aspect ratio should be 200:37.'
+            errorMsg: 'The height of the banner can not be lower than 37 pixels and the aspect ratio should be 200:37.',
         },
         fanart: {
             minHeight: 200,
             minWidth: 200,
             validate(img) {
-                return img.height >= this.minHeight &&
-                    img.width >= this.minWidth;
+                return img.height >= this.minHeight
+                    && img.width >= this.minWidth;
             },
-            errorMsg: 'The minimum allowed size for a fanart is 200x200.'
-        }
+            errorMsg: 'The minimum allowed size for a fanart is 200x200.',
+        },
     };
 
     let imageSelectorDialog = null;
@@ -48,7 +46,7 @@
         currentRequest = $.getJSON(scRoot + '/imageSelector/', {
             show: $('#showID').attr('value'),
             imageType,
-            provider: $('#images-provider').val()
+            provider: $('#images-provider').val(),
         }, data => {
             $.each(data, (i, entry) => {
                 if (typeof entry === 'string') {
@@ -61,9 +59,9 @@
             imageSelectorDialog.dialog('option', 'dialogClass', 'browserDialog');
         });
 
-        const scrollableHeight = imageSelectorDialog.outerHeight() -
-            imageSelectorDialog.find('.image-provider-container').outerHeight() -
-            15;
+        const scrollableHeight = imageSelectorDialog.outerHeight()
+            - imageSelectorDialog.find('.image-provider-container').outerHeight()
+            - 15;
 
         imagesContainer.height(scrollableHeight).css('maxHeight', scrollableHeight);
     }
@@ -95,7 +93,7 @@
         imageSelectorDialog = imageSelectorElement.dialog({
             dialogClass: 'image-selector-dialog',
             classes: {
-                'ui-dialog': 'ui-dialog-scrollable-by-child'
+                'ui-dialog': 'ui-dialog-scrollable-by-child',
             },
             title: _('Choose Image'),
             position: {my: 'center top', at: 'center top+60', of: window},
@@ -104,7 +102,7 @@
             maxHeight: Math.min($(document).height() - 80, $(window).height() - 80),
             maxWidth: $(document).width() - 80,
             modal: true,
-            autoOpen: false
+            autoOpen: false,
         });
 
         imageSelectorDialog.dialog('option', 'buttons', [{
@@ -122,13 +120,13 @@
                 }
 
                 $(this).dialog('close');
-            }
+            },
         }, {
             text: 'Cancel',
             class: 'btn',
             click() {
                 $(this).dialog('close');
-            }
+            },
         }]);
 
         const dropdown = imageSelectorDialog.children('#images-provider');

@@ -76,19 +76,22 @@ package-lock.json
 .tox
 .coverage
 htmlcov
+coverage.xml
 
 # nzbToMedia #
 ######################
 contrib/nzbToMedia
 
-# setup.py #
+# pyproject #
 ######################
 *.egg-info
 .eggs
 build
+.pytest_cache
 
 # virtualenv #
 venv
+.venv
 
 # diffs
 /*.diff
@@ -103,3 +106,7 @@ lib[23]/bin
 lib[23]/.libs_cffi_backend
 lib[23]/cffi.libs
 atlassian-ide-plugin.xml
+
+# Readynas
+config.xml
+fvapp-sickchill.service

@@ -1,151 +1,199 @@
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: Python package
+name: Python Packaging
 
 on:
   push:
     branches:
-      - '*'
+      - master
+      - develop
   pull_request:
     branches:
-      - '*'
+      - develop
 
 jobs:
-  test:
+  Test:
     strategy:
       matrix:
-        python-version: [3.7]
         os: [ubuntu-latest]
-      fail-fast: false
+        python-version: [3.6, 3.7, 3.8, 3.9]
+        experimental: [false]
+        include:
+          - os: windows-latest
+            python-version: 3.9
+            experimental: true
+          - os: macos-latest
+            python-version: 3.9
+            experimental: true
+      fail-fast: true
+    continue-on-error: ${{ matrix.experimental }}
     runs-on: ${{ matrix.os }}
     steps:
+    - name: Cancel Previous Runs
+      if: success() && !env.ACT
+      uses: styfle/cancel-workflow-action@0.9.1
+      with:
+        access_token: ${{ github.token }}
     - name: Checkout
+      if: success() && !env.ACT
       uses: actions/checkout@v2
       with:
         fetch-depth: 1
         persist-credentials: false
+    - name: Lint shell scripts
+      if: success() && startsWith(runner.os, 'Linux') && matrix.python-version == 3.9 && !env.ACT
+      uses: ludeeus/action-shellcheck@master
+      with:
+        format: diff
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
     - name: Set up Node
-      uses: actions/setup-node@v1
+      if: success() && startsWith(runner.os, 'Linux') && matrix.python-version == 3.9
+      uses: actions/setup-node@v2
       with:
-        node-version: '14.x'
-    - name: Determine npm cache directory
-      id: npm-cache
-      run: |
-        echo "::set-output name=dir::$(npm config get cache)"
-    - name: Restore npm cache
+        node-version: '16.x'
+        cache: 'npm'
+    - name: Restore pip cache
+      if: success() && !env.ACT
       uses: actions/cache@v2
       with:
-        path: ${{ steps.npm-cache.outputs.dir }}
+        path: $(python -m pip cache dir)
+        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-${{ matrix.python-version }}-
+    - name: Restore npm cache
+      if: success() && startsWith(runner.os, 'Linux') && matrix.python-version == 3.9
+      uses: actions/cache@v2
+      with:
+        path: $(npm config get cache)
         key: ${{ runner.os }}-node-${{ hashFiles('**/package.json') }}
         restore-keys: |
           ${{ runner.os }}-node-
-    - name: Get yarn cache directory path
-      id: yarn-cache-dir-path
-      run: echo "::set-output name=dir::$(yarn cache dir)"
-    - name: Restore yarn cache
-      uses: actions/cache@v2
-      id: yarn-cache
+    - name: Install yarn
+      if: success() && startsWith(runner.os, 'Linux') && matrix.python-version == 3.9
+      run: npm install -g yarn
+      shell: bash
+    - name: Install Poetry
+      uses: snok/install-poetry@v1.1.8
       with:
-        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-yarn-
-    - name: Restore pip cache
+        version: 1.1.8
+        virtualenvs-path: .venv
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+    - name: Restore poetry cache
+      if: success() && !env.ACT
       uses: actions/cache@v2
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+        path: $(poetry config cache-dir)
+        key: ${{ runner.os }}-poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+    - name: Restore virtualenv
+      if: success() && !env.ACT
+      uses: actions/cache@v2
+      with:
+        path: .venv
+        key: ${{ runner.os }}-virtualenv-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
     - name: Install dependencies
       run: |
-        yarn --silent
-        pip install --upgrade pip tox babel crowdin-cli-py
-    - name: Get tox workdir
-      id: tox-workdir-path
-      run: echo "::set-output name=dir::$(tox --showconfig | grep '^toxworkdir = .*$' | tail -c+14)"
-    - name: Restore tox workdir
-      uses: actions/cache@v2
-      with:
-        path: ${{ steps.tox-workdir-path.outputs.dir }}
-        key: ${{ runner.os }}-tox-${{ hashFiles('**/tox.ini') }}
-        restore-keys: |
-          ${{ runner.os }}-tox-
-    - name: Install xo
-      run: npm install -g xo
-    - name: Test with XO
-      run: xo
-    - name: Test with tox
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      run: tox -v --recreate -e "py37-{flake8,linux}"
-  deploy:
-    needs: test
+        poetry install --no-interaction --no-root
+        pip install poethepoet
+      shell: bash
+    - name: Run yarn
+      if: success() && startsWith(runner.os, 'Linux') && matrix.python-version == 3.9
+      run: poe yarn
+      shell: bash
+    - name: Lint Python
+      if: success() && startsWith(runner.os, 'Linux') && matrix.python-version == 3.9
+      run: poe lint
+      shell: bash
+    - name: Lint and test Javascript
+      if: success() && startsWith(runner.os, 'Linux') && matrix.python-version == 3.9
+      run: poe yarn test
+      shell: bash
+    - name: Test Python
+      run: |
+        poe pytest
+        poe codecov -e OS=${{ runner.os }} Interpreter="$(poetry run python -V)" -t ${{ secrets.CODECOV_TOKEN }}
+      shell: bash
+  Deploy:
+    needs: [Test]
     runs-on: ubuntu-latest
     steps:
+    - name: Cancel Previous Runs
+      uses: styfle/cancel-workflow-action@0.9.1
+      with:
+        access_token: ${{ github.token }}
     - name: Checkout
+      if: success() && !env.ACT
       uses: actions/checkout@v2
       with:
         fetch-depth: 1
         persist-credentials: false
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
     - name: Set up Docker Buildx
-      if: success()
-      id: buildx
-      uses: crazy-max/ghaction-docker-buildx@v3
-      with:
-        buildx-version: latest
-        qemu-version: latest
-    - name: Available platforms
-      if: success()
-      run: echo ${{ steps.buildx.outputs.platforms }}
-    - name: Prepare
-      if: success()
-      id: prepare
-      run: |
-        echo ::set-output name=docker_platforms::linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64,linux/386,linux/ppc64le,linux/s390x
-        echo ::set-output name=docker_username::miigotu
-        echo ::set-output name=docker_image::docker.io/${GITHUB_REPOSITORY,,}
-        VERSION_TAG=${GITHUB_REF#refs/*/}
-        echo ::set-output name=version::${VERSION_TAG%/merge}
+      uses: docker/setup-buildx-action@v1
     - name: Cache Docker layers
       uses: actions/cache@v2
-      id: cache
       with:
         path: /tmp/.buildx-cache
         key: ${{ runner.os }}-buildx-${{ github.sha }}
         restore-keys: |
           ${{ runner.os }}-buildx-
-    - name: Docker Login and set build command
-      if: success()
-      id: login
-      env:
-        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-        GITHUB_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        echo "${DOCKER_PASSWORD}" | docker login --username "${{ steps.prepare.outputs.docker_username }}" --password-stdin docker.io
-        echo  "Available target: ${{ steps.buildx.outputs.platforms }}"
-        echo ::set-output name=buildx::$(echo docker buildx build --output type=image,name=${{ steps.prepare.outputs.docker_image }},push=true \
-          --platform ${{ steps.prepare.outputs.docker_platforms }} --cache-from "type=local,src=/tmp/.buildx-cache" --cache-to "type=local,dest=/tmp/.buildx-cache" \
-          --tag "${{ steps.prepare.outputs.docker_image }}:${{ steps.prepare.outputs.version }}")
-    - name: Run Buildx (master)
-      if: success() && contains(steps.prepare.outputs.version, 'master')
-      run: |
-          ${{ steps.login.outputs.buildx }} --tag "${{ steps.prepare.outputs.docker_image }}:latest" --file Dockerfile .
-    - name: Run Buildx (non-master)
-      if: success() && !contains(steps.prepare.outputs.version, 'master')
-      run: |
-        ${{ steps.login.outputs.buildx }} --file Dockerfile .
-    - name: Push to GitHub Packages
-      if: success() && contains(steps.prepare.outputs.version, 'master')
-      uses: docker/build-push-action@v1
+    - name: Login to DockerHub
+      if: github.actor == 'miigotu' && !env.ACT
+      uses: docker/login-action@v1
       with:
-        username: ${{ github.actor }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    - name: Login to GitHub Container Registry
+      if: github.actor == 'miigotu' && !env.ACT
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.GITHUB_TOKEN }}
-        registry: docker.pkg.github.com
-        repository: sickchill/sickchill/sickchill
-        tag_with_ref: true
+    - name: Docker meta
+      id: meta
+      uses: docker/metadata-action@v3
+      with:
+        images: |
+          ${{ github.repository }}
+          ghcr.io/${{ github.repository }}
+        labels: |
+          org.opencontainers.image.source=https://github.com/sickchill/sickchill
+          org.opencontainers.image.url=https://sickchill.github.io
+          org.opencontainers.image.licenses=GPL-3.0+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1.1.8
+      with:
+        version: 1.1.8
+        virtualenvs-create: false
+    - name: Set variables
+      id: vars
+      run: |
+        echo ::set-output name=version::$(poetry version --short)
+        echo ::set-output name=docker_name::${GITHUB_REPOSITORY,,}
+    - name: Build and Push
+      if: github.actor == 'miigotu'
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: ${{ github.event_name != 'pull_request' && !env.ACT }}
+        tags: |
+          ${{ steps.meta.outputs.tags }}
+          ${{ steps.vars.outputs.docker_name }}:${{ steps.vars.outputs.version }}
+          ghcr.io/${{ steps.vars.outputs.docker_name }}:${{ steps.vars.outputs.version }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache-new
+      # Temp fix
+      # https://github.com/docker/build-push-action/issues/252
+      # https://github.com/moby/buildkit/issues/1896
+    - name: Move cache
+      if: always()
+      run: |
+        if [ -e /tmp/.buildx-cache-new ]; then rm -rf /tmp/.buildx-cache && mv /tmp/.buildx-cache-new /tmp/.buildx-cache; fi
