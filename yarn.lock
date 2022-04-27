@@ -3129,7 +3129,7 @@ grapheme-splitter@^1.0.4:
     lodash "~0.10.0"
     rimraf "^2.6.1"
 
-grunt-cli@^1.2.0, grunt-cli@~1.4.2:
+grunt-cli@^1.2.0, grunt-cli@~1.4.3:
   version "1.4.3"
   resolved "https://registry.npmjs.org/grunt-cli/-/grunt-cli-1.4.3.tgz"
   dependencies:
@@ -3248,16 +3248,16 @@ grunt-legacy-util@~2.0.1:
   dependencies:
     po2json "*"
 
-grunt@^1.0.1:
-  version "1.4.1"
-  resolved "https://registry.npmjs.org/grunt/-/grunt-1.4.1.tgz"
+grunt@^1.5.2:
+  version "1.5.2"
+  resolved "https://registry.yarnpkg.com/grunt/-/grunt-1.5.2.tgz#46b014e28d17c85baac19d5e891bb3f04923c098"
   dependencies:
     dateformat "~3.0.3"
     eventemitter2 "~0.4.13"
     exit "~0.1.2"
     findup-sync "~0.3.0"
     glob "~7.1.6"
-    grunt-cli "~1.4.2"
+    grunt-cli "~1.4.3"
     grunt-known-options "~2.0.0"
     grunt-legacy-log "~3.0.0"
     grunt-legacy-util "~2.0.1"

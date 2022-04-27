@@ -27,7 +27,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.1.0",
     "eslint-plugin-unicorn": "^34.0.1",
-    "grunt": "^1.0.1",
+    "grunt": "^1.5.2",
     "grunt-bower-concat": "git+https://github.com/miigotu/grunt-bower-concat.git",
     "grunt-bower-task": "git+https://github.com/miigotu/grunt-bower-task.git",
     "grunt-cli": "^1.2.0",
