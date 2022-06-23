@@ -21,27 +21,29 @@ settings.CPU_PRESET = "NORMAL"
 
 disabled_provider_tests = {
     # ???
-    "Cpasbien": ["test_rss_search", "test_episode_search", "test_season_search"],
-    "SkyTorrents": ["test_rss_search", "test_episode_search", "test_season_search"],
-    "ilCorsaroNero": ["test_rss_search"],
+    "Cpasbien": ["rss", "episode", "season"],
+    "SkyTorrents": ["rss", "episode", "season", "cache", "result"],
+    "ilCorsaroNero": ["rss"],
     # api_maintenance still
-    "TorrentProject": ["test_rss_search", "test_episode_search", "test_season_search", "test_cache_update", "test_result_values"],
+    "TorrentProject": ["rss", "episode", "season", "cache", "result"],
     # Have to trick it into thinking is an anime search, and add string overrides
-    "TokyoToshokan": ["test_rss_search", "test_episode_search", "test_season_search"],
-    "LimeTorrents": ["test_rss_search", "test_episode_search", "test_season_search"],
-    "Torrentz": ["test_rss_search", "test_episode_search", "test_season_search", "test_cache_update", "test_result_values"],
-    "ThePirateBay": ["test_rss_search", "test_episode_search", "test_season_search", "test_cache_update", "test_result_values"],
-    "EZTV": ["test_rss_search", "test_episode_search", "test_season_search", "test_cache_update", "test_result_values"],
-    "Rarbg": ["test_season_search", "test_episode_search", "test_rss_search"],
+    "TokyoToshokan": ["rss", "episode", "season"],
+    "LimeTorrents": ["rss", "episode", "season"],
+    "KickAssTorrents": ["rss", "episode", "season", "cache", "result"],
+    "Torrentz": ["rss", "episode", "season", "cache", "result"],
+    "ThePirateBay": ["rss", "episode", "season", "cache", "result"],
+    "EZTV": ["rss", "episode", "season", "cache", "result"],
+    "Rarbg": ["season", "episode", "rss", "movie"],
     # Demonoid is onion only now
-    "Demonoid": ["test_rss_search", "test_episode_search", "test_season_search", "test_cache_update", "test_result_values"],
+    "Demonoid": ["rss", "episode", "season", "cache", "result"],
     # HorribleSubs needs rewritten
-    "HorribleSubs": ["test_rss_search", "test_episode_search", "test_season_search", "test_cache_update", "test_result_values"],
+    "HorribleSubs": ["rss", "episode", "season", "cache", "result"],
+    "Nyaa": ["rss"],
 }
 
 test_string_overrides = {
     "Cpasbien": {"Episode": ["The 100 S07E08"], "Season": ["The 100 S06"]},
-    "Torrent9": {"Episode": ["The 100 S07E08"], "Season": ["The 100 S06"]},
+    "Torrent9": {"Episode": ["Power Book IV Force S01E01"], "Season": ["The Lost Symbol S01"]},
     "Nyaa": {"Episode": ["Fairy Tail S2"], "Season": ["Fairy Tail S2"]},
     "TokyoToshokan": {"Episode": ["Fairy Tail S2"], "Season": ["Fairy Tail S2"]},
     "HorribleSubs": {"Episode": ["Fairy Tail S2"], "Season": ["Fairy Tail S2"]},
@@ -88,7 +90,7 @@ class BaseParser(type):
         def magic_skip(func):  # pylint:disable=no-self-argument
             @wraps(func)
             def magic(self, *args, **kwargs):
-                if func.__name__ in disabled_provider_tests.get(self.provider.name, []):
+                if func.__name__.split("_")[1] in disabled_provider_tests.get(self.provider.name, []):
                     self.skipTest("Test is programmatically disabled for provider {}".format(self.provider.name))
                 func(self, *args, **kwargs)
 
@@ -123,6 +125,7 @@ class BaseParser(type):
                 results = self.provider.search(self.search_strings("Season"))
                 assert results, results
 
+        # @pytest.mark.skip("Need to add a movie to the database before movie search works")
         @magic_skip
         @pytest.mark.vcr()
         def test_movie_search(self):
@@ -165,21 +168,21 @@ class BaseParser(type):
                     if result["link"].startswith("magnet"):
                         assert magnet_regex.match(result["link"])
                     else:
-                        assert validators.url(result["link"]), result["link"]
+                        assert validators.url(result["link"]) == True, result["link"]
 
                     self.assertIsInstance(self.provider._get_size(result), int)
                     assert all(self.provider._get_title_and_url(result))
                     assert self.provider._get_size(result)
 
-            @pytest.skip("Not yet implemented")
-            def test_season_search_strings_format(self):
-                """Check format of the provider's season search strings"""
-                pass
+        @pytest.mark.skip("Not yet implemented")
+        def test_season_search_strings_format(self):
+            """Check format of the provider's season search strings"""
+            pass
 
-            @pytest.skip("Not yet implemented")
-            def test_episode_search_strings_format(self):
-                """Check format of the provider's season search strings"""
-                pass
+        @pytest.mark.skip("Not yet implemented")
+        def test_episode_search_strings_format(self):
+            """Check format of the provider's season search strings"""
+            pass
 
 
 def generate_test_cases():

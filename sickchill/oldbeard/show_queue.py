@@ -608,16 +608,10 @@ class QueueItemRename(ShowQueueItem):
         for cur_ep_obj in ep_obj_list:
             # Only want to rename if we have a location
             if cur_ep_obj.location:
-                if cur_ep_obj.relatedEps:
-                    # do we have one of multi-episodes in the rename list already
-                    have_already = False
-                    for cur_related_ep in cur_ep_obj.relatedEps + [cur_ep_obj]:
-                        if cur_related_ep in ep_obj_rename_list:
-                            have_already = True
-                            break
-                    if not have_already:
-                        ep_obj_rename_list.append(cur_ep_obj)
-
+                # do we have one of multi-episodes in the rename list already
+                for cur_related_ep in cur_ep_obj.relatedEps + [cur_ep_obj]:
+                    if cur_related_ep in ep_obj_rename_list:
+                        break
                 else:
                     ep_obj_rename_list.append(cur_ep_obj)
 
@@ -724,7 +718,7 @@ class QueueItemRemove(ShowQueueItem):
         super(QueueItemRemove, self).__init__(ShowQueueActions.REMOVE, show)
 
         # lets make sure this happens before any other high priority actions
-        self.priority = generic_queue.QueuePriorities.HIGH ** 2
+        self.priority = generic_queue.QueuePriorities.HIGH**2
         self.full = full
 
     def run(self):

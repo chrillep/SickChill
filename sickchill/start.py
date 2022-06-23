@@ -324,6 +324,7 @@ def initialize(consoleLogging=True):
         settings.ALLOWED_EXTENSIONS = check_setting_str(settings.CFG, "General", "allowed_extensions", settings.ALLOWED_EXTENSIONS)
 
         settings.USENET_RETENTION = check_setting_int(settings.CFG, "General", "usenet_retention", 500)
+        settings.CACHE_RETENTION = check_setting_int(settings.CFG, "General", "cache_retention", 30)
 
         settings.AUTOPOSTPROCESSOR_FREQUENCY = check_setting_int(
             settings.CFG,
@@ -372,7 +373,6 @@ def initialize(consoleLogging=True):
         config.change_unrar_tool(
             check_setting_str(settings.CFG, "General", "unrar_tool", rarfile.UNRAR_TOOL),
             check_setting_str(settings.CFG, "General", "unar_tool", rarfile.UNAR_TOOL),
-            check_setting_str(settings.CFG, "General", "bsdtar_tool", rarfile.BSDTAR_TOOL),
         )
 
         settings.RENAME_EPISODES = check_setting_bool(settings.CFG, "General", "rename_episodes", True)
@@ -496,6 +496,8 @@ def initialize(consoleLogging=True):
         settings.FREEMOBILE_NOTIFY_ONSUBTITLEDOWNLOAD = check_setting_bool(settings.CFG, "FreeMobile", "freemobile_notify_onsubtitledownload")
         settings.FREEMOBILE_ID = check_setting_str(settings.CFG, "FreeMobile", "freemobile_id")
         settings.FREEMOBILE_APIKEY = check_setting_str(settings.CFG, "FreeMobile", "freemobile_apikey")
+
+        settings.FLARESOLVERR_URI = check_setting_str(settings.CFG, "General", "flaresolverr_uri")
 
         settings.USE_TELEGRAM = check_setting_bool(settings.CFG, "Telegram", "use_telegram")
         settings.TELEGRAM_NOTIFY_ONSNATCH = check_setting_bool(settings.CFG, "Telegram", "telegram_notify_onsnatch")
@@ -1190,6 +1192,7 @@ def save_config():
                 "nzb_method": settings.NZB_METHOD,
                 "torrent_method": settings.TORRENT_METHOD,
                 "usenet_retention": int(settings.USENET_RETENTION),
+                "cache_retention": int(settings.CACHE_RETENTION),
                 "autopostprocessor_frequency": int(settings.AUTOPOSTPROCESSOR_FREQUENCY),
                 "dailysearch_frequency": int(settings.DAILYSEARCH_FREQUENCY),
                 "backlog_frequency": int(settings.BACKLOG_FREQUENCY),
@@ -1261,7 +1264,6 @@ def save_config():
                 "unpack_dir": settings.UNPACK_DIR,
                 "unrar_tool": settings.UNRAR_TOOL,
                 "unar_tool": settings.UNAR_TOOL,
-                "bsdtar_tool": settings.BSDTAR_TOOL,
                 "rename_episodes": int(settings.RENAME_EPISODES),
                 "airdate_episodes": int(settings.AIRDATE_EPISODES),
                 "file_timestamp_timezone": settings.FILE_TIMESTAMP_TIMEZONE,
@@ -1283,6 +1285,7 @@ def save_config():
                 "display_all_seasons": int(settings.DISPLAY_ALL_SEASONS),
                 "ended_shows_update_interval": int(settings.ENDED_SHOWS_UPDATE_INTERVAL),
                 "news_last_read": settings.NEWS_LAST_READ,
+                "flaresolverr_uri": settings.FLARESOLVERR_URI,
             },
             "Cloudflare": {"auth_domain": settings.CF_AUTH_DOMAIN, "audience_policy": settings.CF_POLICY_AUD},
             "Shares": settings.WINDOWS_SHARES,

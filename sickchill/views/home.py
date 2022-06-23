@@ -10,6 +10,7 @@ from operator import attrgetter
 from pathlib import Path
 from urllib.parse import unquote_plus
 
+import requests
 from github.GithubException import GithubException
 from tornado.escape import xhtml_unescape
 
@@ -47,9 +48,6 @@ from .routes import Route
 
 @Route("/home(/?.*)", name="home")
 class Home(WebRoot):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def _genericMessage(self, subject=None, message=None):
         t = PageTemplate(rh=self, filename="genericMessage.mako")
         return t.render(message=message, subject=subject, topmenu="home", title="")
@@ -397,7 +395,7 @@ class Home(WebRoot):
 
         import validators
 
-        if not validators.url(webhook):
+        if validators.url(webhook) != True:
             return _("Invalid URL for webhook")
 
         result = notifiers.discord_notifier.test_notify(webhook, name, avatar, tts)
@@ -535,6 +533,18 @@ class Home(WebRoot):
         blacklist_name = self.get_body_argument("blacklist_name")
         return notifiers.trakt_notifier.test_notify(username, blacklist_name)
 
+    def testFlareSolverr(self):
+        uri = self.get_body_argument("flaresolverr_uri")
+        logger.debug(_(f"Checking flaresolverr uri: {uri}"))
+        try:
+            requests.head(uri)
+            result = _("Successfully connected to flaresolverr, this is experimental!")
+        except (requests.ConnectionError, requests.RequestException):
+            result = _("Failed to connect to flaresolverr")
+
+        logger.debug(_(f"Flaresolverr result: {result}"))
+        return result
+
     @staticmethod
     def loadShowNotifyLists():
 
@@ -544,40 +554,53 @@ class Home(WebRoot):
         data = {}
         size = 0
         for r in rows:
-            NotifyList = {"emails": "", "prowlAPIs": ""}
+            notify_list = {"emails": "", "prowlAPIs": ""}
             if r["notify_list"] and len(r["notify_list"]) > 0:
                 # First, handle legacy format (emails only)
                 if not r["notify_list"][0] == "{":
-                    NotifyList["emails"] = r["notify_list"]
+                    notify_list["emails"] = r["notify_list"]
                 else:
-                    NotifyList = dict(ast.literal_eval(r["notify_list"]))
+                    notify_list = dict(ast.literal_eval(r["notify_list"]))
 
-            data[r["show_id"]] = {"id": r["show_id"], "name": r["show_name"], "list": NotifyList["emails"], "prowl_notify_list": NotifyList["prowlAPIs"]}
-            size += 1
-        data["_size"] = size
+            data[r["show_id"]] = {"id": r["show_id"], "name": r["show_name"], "list": notify_list["emails"], "prowl_notify_list": notify_list["prowlAPIs"]}
+        data["_size"] = len(data)
         return json.dumps(data)
 
     def saveShowNotifyList(self):
+
         show = self.get_body_argument("show")
-        emails = self.get_body_argument("emails", "")
-        prowlAPIs = self.get_body_argument("prowlAPIs", "")
-
-        entries = {"emails": emails or "", "prowlAPIs": prowlAPIs or ""}
         main_db_con = db.DBConnection()
+        rows = main_db_con.select("SELECT show_id, notify_list FROM tv_shows WHERE show_id = ?", [show])
+        # Get existing data from db for both email and prowl
+        data = {}
 
-        # Get current data
-        for subs in main_db_con.select("SELECT notify_list FROM tv_shows WHERE show_id = ?", [show]):
-            if subs["notify_list"] and len(subs["notify_list"]) > 0:
+        for r in rows:
+            notify_list = {"emails": "", "prowlAPIs": ""}
+            if r["notify_list"] and len(r["notify_list"]) > 0:
                 # First, handle legacy format (emails only)
-                if not subs["notify_list"][0] == "{":
-                    entries["emails"] = subs["notify_list"]
+                if not r["notify_list"][0] == "{":
+                    notify_list["emails"] = r["notify_list"]
                 else:
-                    entries = dict(ast.literal_eval(subs["notify_list"]))
+                    notify_list = dict(ast.literal_eval(r["notify_list"]))
+            data = {"id": r["show_id"], "email_list": notify_list["emails"], "prowl_list": notify_list["prowlAPIs"]}
 
+        show_email = data["email_list"]
+        show_prowl = data["prowl_list"]
+
+        # Change email or prowl with new or keep the existing
+        emails = self.get_body_argument("emails", show_email)
+        prowlAPIs = self.get_body_argument("prowlAPIs", show_prowl)
+
+        entries = {"emails": emails, "prowlAPIs": prowlAPIs}
+
+        # TODO: Split emails and do validators.email
         if emails or prowlAPIs:
-            if not main_db_con.action("UPDATE tv_shows SET notify_list = ? WHERE show_id = ?", [str(entries), show]):
-                return "ERROR"
+            result = main_db_con.action("UPDATE tv_shows SET notify_list = ? WHERE show_id = ?", [str(entries), show])
+        else:
+            result = main_db_con.action("UPDATE tv_shows SET notify_list = Null WHERE show_id = ?", [show])
 
+        if not result:
+            return "ERROR"
         return "OK"
 
     def testEmail(self):
@@ -1698,7 +1721,7 @@ class Home(WebRoot):
             result = json.dumps({"result": "failure", "message": _("Result not found in the cache")})
 
         if isinstance(result, str):
-            sickchill.oldbeard.logger.info(_("Could not snatch manually selected result: {}").format(result))
+            sickchill.logger.info(_(f"Could not snatch manually selected result: {result}"))
         elif isinstance(result, sickchill.oldbeard.classes.SearchResult):
             sickchill.oldbeard.search.snatchEpisode(result, SNATCHED_BEST)
 

@@ -18,17 +18,17 @@ import uuid
 import zipfile
 from contextlib import closing
 from itertools import cycle
+from pathlib import Path
+from typing import Union
 from urllib.parse import urljoin
 from xml.etree import ElementTree
 
 import certifi
-import cloudscraper
 import ifaddr
 import rarfile
 import requests
 import urllib3.exceptions
 from cachecontrol import CacheControl
-from cloudscraper.exceptions import CloudflareException
 from tornado._locale_data import LOCALE_NAMES
 from unidecode import unidecode
 from urllib3 import disable_warnings
@@ -70,10 +70,13 @@ def set_opener(verify: bool):
     disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     try:
         from urllib.request import HTTPSHandler
+    except ImportError:
+        HTTPSHandler = None
 
+    if HTTPSHandler:
         https_handler = HTTPSHandler(context=make_context(verify), check_hostname=True)
         opener = urllib.request.build_opener(https_handler)
-    except ImportError:
+    else:
         opener = urllib.request.build_opener()
 
     opener.addheaders = [("User-agent", sickchill.oldbeard.common.USER_AGENT)]
@@ -82,7 +85,7 @@ def set_opener(verify: bool):
 
 set_opener(settings.SSL_VERIFY)
 
-# Override original shutil function to increase its speed by increasing its buffer to 10MB (optimal)
+# Override original shutil function to increase its speed by increasing it's buffer to 10MB (optimal)
 copyfileobj_orig = shutil.copyfileobj
 
 
@@ -196,7 +199,7 @@ def remove_non_release_groups(name):
         if remove_type == "search":
             _name = _name.replace(remove_string, "")
         elif remove_type == "searchre":
-            _name = re.sub(r"(?i){}".format(remove_string), "", _name)
+            _name = re.sub(rf"(?i){remove_string}", "", _name)
 
     return _name.strip()
 
@@ -205,8 +208,10 @@ def is_media_file(filename):
     """
     Check if named file may contain media
 
-    :param filename: Filename to check
-    :return: True if this is a known media file, False if not
+    Parameters:
+        filename: Filename to check
+    Returns:
+        True if this is a known media file, False if not
     """
 
     # ignore samples
@@ -226,7 +231,7 @@ def is_media_file(filename):
         if filename == "tvshow-trailer.mp4":
             return False
 
-        # ignore MAC OS's retarded "resource fork" files
+        # ignore MACOS's retarded "resource fork" files
         if filename.startswith("._"):
             return False
 
@@ -237,7 +242,7 @@ def is_media_file(filename):
 
         return filname_parts[-1].lower() in MEDIA_EXTENSIONS or (settings.UNPACK == settings.UNPACK_PROCESS_INTACT and is_rar)
     except (TypeError, AssertionError) as error:  # Not a string
-        logger.debug(_("Invalid filename. Filename must be a string. {0}").format(error))
+        logger.debug(_(f"Invalid filename. Filename must be a string. Error: {error}"))
         return False
 
 
@@ -245,8 +250,10 @@ def is_rar_file(filename):
     """
     Check if file is a RAR file, or part of a RAR set
 
-    :param filename: Filename to check
-    :return: True if this is RAR/Part file, False if not
+    Parameters:
+        filename: Filename to check
+    Returns:
+         True if this is RAR/Part file, False if not
     """
     archive_regex = r"(?P<file>^(?P<base>(?:(?!\.part\d+\.rar$).)*)\.(?:(?:part0*1\.)?rar)$)"
     ret = re.search(archive_regex, filename) is not None
@@ -263,7 +270,8 @@ def remove_file_failed(failed_file):
     """
     Remove file from filesystem
 
-    :param failed_file: File to remove
+    Parameters:
+        failed_file: File to remove
     """
 
     # noinspection PyBroadException
@@ -277,8 +285,10 @@ def makeDir(path):
     """
     Make a directory on the filesystem
 
-    :param path: directory to make
-    :return: True if success, False if failure
+    Parameters:
+        path: directory to make
+    Returns:
+         True if success, False if failure
     """
 
     if not os.path.isdir(path):
@@ -295,8 +305,10 @@ def list_media_files(path):
     """
     Get a list of files possibly containing media in a path
 
-    :param path: Path to check for files
-    :return: list of files
+    Parameters:
+        path: Path to check for files
+    Returns:
+         list of files
     """
 
     if not path or not os.path.isdir(path):
@@ -320,8 +332,9 @@ def copyFile(srcFile, destFile):
     """
     Copy a file from source to destination
 
-    :param srcFile: Path of source file
-    :param destFile: Path of destination file
+    Parameters:
+        srcFile: Path of source file
+        destFile: Path of destination file
     """
 
     try:
@@ -329,10 +342,10 @@ def copyFile(srcFile, destFile):
     except shutil.SameFileError:
         return
     except (shutil.SpecialFileError, shutil.Error) as error:
-        logger.warning("{0}".format(error))
+        logger.warning(f"There was a problem copying a file from {srcFile} to {destFile}. Error: {error}")
         raise error
     except Exception as error:
-        logger.exception("{0}".format(error))
+        logger.exception(f"There was a problem copying a file from {srcFile} to {destFile}. Error: {error}")
         raise error
 
     try:
@@ -345,8 +358,9 @@ def moveFile(srcFile, destFile):
     """
     Move a file from source to destination
 
-    :param srcFile: Path of source file
-    :param destFile: Path of destination file
+    Parameters:
+        srcFile: Path of source file
+        destFile: Path of destination file
     """
     try:
         shutil.move(srcFile, destFile)
@@ -361,14 +375,24 @@ def hardlinkFile(srcFile, destFile):
     """
     Create a hard-link (inside filesystem link) between source and destination
 
-    :param srcFile: Source file
-    :param destFile: Destination file
+    Parameters:
+        srcFile: Source file
+        destFile: Destination file
     """
 
     try:
+        if os.path.lexists(destFile):
+            try:
+                os.unlink(destFile)
+            except (OSError, IOError) as error:
+                logger.log(
+                    _(
+                        f"The destination file already exists and we were unable to remove it, so hard linking might fail. Trying anyway. Location: {destFile}. Error: {error}"
+                    )
+                )
         os.link(srcFile, destFile)
     except Exception as error:
-        logger.warning(_("Failed to create hardlink of {0} at {1}. Error: {2}. Copying instead").format(srcFile, destFile, error))
+        logger.warning(_(f"There was a problem creating a hardlink of {srcFile} at {destFile}. Copying instead. Error: {error}"))
         copyFile(srcFile, destFile)
 
     fixSetGroupID(destFile)
@@ -379,15 +403,16 @@ def moveAndSymlinkFile(srcFile, destFile):
     Move a file from source to destination, then create a symlink back from destination from source. If this fails, copy
     the file from source to destination
 
-    :param srcFile: Source file
-    :param destFile: Destination file
+    Parameters:
+        srcFile: Source file
+        destFile: Destination file
     """
 
     try:
         moveFile(srcFile, destFile)
         os.symlink(destFile, srcFile)
     except Exception as error:
-        logger.warning(_("Failed to create symlink of {0} at {1}. Error: {2}. Copying instead").format(srcFile, destFile, error))
+        logger.warning(_(f"There was a problem creating a symlink of {srcFile} at {destFile}. Copying instead. Error: {error}"))
         copyFile(srcFile, destFile)
 
 
@@ -397,16 +422,16 @@ def make_dirs(path):
     parents
     """
 
-    logger.debug(_("Checking if the path {0} already exists").format(path))
+    logger.debug(_(f"Checking if the path {path} already exists"))
 
     if not os.path.isdir(path):
         # Windows, create all missing folders
         if platform.system() == "Windows":
             try:
-                logger.debug(_("Folder {0} didn't exist, creating it").format(path))
+                logger.debug(_(f"Folder {path} didn't exist, creating it"))
                 os.makedirs(path)
             except (OSError, IOError) as error:
-                logger.exception(_("Failed creating {0} : {1}").format(path, error))
+                logger.exception(_(f"There was a problem creating {path}. Error: {error}"))
                 return False
 
         # not Windows, create all missing folders and set permissions
@@ -423,14 +448,14 @@ def make_dirs(path):
                     continue
 
                 try:
-                    logger.debug(_("Folder {0} didn't exist, creating it").format(sofar))
+                    logger.debug(_(f"Folder {sofar} didn't exist, creating it"))
                     os.mkdir(sofar)
                     # use normpath to remove end separator, otherwise checks permissions against itself
                     chmodAsParent(os.path.normpath(sofar))
                     # do the library update for synoindex
                     sickchill.oldbeard.notifiers.synoindex_notifier.addFolder(sofar)
                 except (OSError, IOError) as error:
-                    logger.exception(_("Failed creating {0} : {1}").format(sofar, error))
+                    logger.exception(_(f"There was a problem creating {sofar}. Error: {error}"))
                     return False
 
     return True
@@ -441,9 +466,10 @@ def rename_ep_file(cur_path, new_path, old_path_length=0):
     Creates all folders needed to move a file to its new location, renames it, then cleans up any folders
     left that are now empty.
 
-    :param  cur_path: The absolute path to the file you want to move/rename
-    :param new_path: The absolute path to the destination for the file WITHOUT THE EXTENSION
-    :param old_path_length: The length of media file path (old name) WITHOUT THE EXTENSION
+    Parameters:
+        cur_path: The absolute path to the file you want to move/rename
+        new_path: The absolute path to the destination for the file WITHOUT THE EXTENSION
+        old_path_length: The length of media file path (old name) WITHOUT THE EXTENSION
     """
 
     # new_dest_dir, new_dest_name = os.path.split(new_path)
@@ -471,10 +497,10 @@ def rename_ep_file(cur_path, new_path, old_path_length=0):
 
     # move the file
     try:
-        logger.info(_("Renaming file from {0} to {1}").format(cur_path, new_path))
+        logger.info(_(f"Renaming file from {cur_path} to {new_path}"))
         shutil.move(cur_path, new_path)
     except (OSError, IOError) as error:
-        logger.exception(_("Failed renaming {0} to {1} : {2}").format(cur_path, new_path, error))
+        logger.exception(_(f"There was a problem renaming {cur_path} to {new_path}. Error: {error}"))
         return False
 
     # clean up any old folders that are empty
@@ -487,14 +513,15 @@ def delete_empty_folders(check_empty_dir, keep_dir=None):
     """
     Walks backwards up the path and deletes any empty folders found.
 
-    :param check_empty_dir: The path to clean (absolute path to a folder)
-    :param keep_dir: Clean until this path is reached
+    Parameters:
+        check_empty_dir: The path to clean (absolute path to a folder)
+        keep_dir: Clean until this path is reached
     """
 
     # treat check_empty_dir as empty when it only contains these items
     ignore_items = []
 
-    logger.info(_("Trying to clean any empty folders under ") + check_empty_dir)
+    logger.info(_(f"Trying to clean any empty folders under {check_empty_dir}"))
 
     # as long as the folder exists and doesn't contain any files, delete it
     while os.path.isdir(check_empty_dir) and check_empty_dir != keep_dir:
@@ -503,13 +530,13 @@ def delete_empty_folders(check_empty_dir, keep_dir=None):
         if not check_files or (len(check_files) <= len(ignore_items) and all(check_file in ignore_items for check_file in check_files)):
             # directory is empty or contains only ignore_items
             try:
-                logger.info(_("Deleting empty folder: ") + check_empty_dir)
+                logger.info(_(f"Deleting empty folder: {check_empty_dir}"))
                 # need shutil.rmtree when ignore_items is really implemented
                 os.rmdir(check_empty_dir)
                 # do the library update for synoindex
                 sickchill.oldbeard.notifiers.synoindex_notifier.deleteFolder(check_empty_dir)
             except OSError as error:
-                logger.warning(_("Unable to delete {0}. Error: {1}").format(check_empty_dir, error))
+                logger.warning(_(f"There was a problem trying to delete {check_empty_dir}. Error: {error}"))
                 break
             check_empty_dir = os.path.dirname(check_empty_dir)
         else:
@@ -520,8 +547,10 @@ def fileBitFilter(mode):
     """
     Strip special filesystem bits from file
 
-    :param mode: mode to check and strip
-    :return: required mode for media file
+    Parameters:
+        mode: mode to check and strip
+    Returns:
+         required mode for media file
     """
 
     for bit in [stat.S_IXUSR, stat.S_IXGRP, stat.S_IXOTH, stat.S_ISUID, stat.S_ISGID]:
@@ -536,7 +565,8 @@ def chmodAsParent(childPath):
     Retain permissions of parent for childs
     (Does not work for Windows hosts)
 
-    :param childPath: Child Path to change permissions to sync from parent
+    Parameters:
+        childPath: Child Path to change permissions to sync from parent
     """
 
     if platform.system() == "Windows":
@@ -545,7 +575,7 @@ def chmodAsParent(childPath):
     parentPath = os.path.dirname(childPath)
 
     if not parentPath:
-        logger.debug(_("No parent path provided in {location} unable to get permissions from it").format(location=childPath))
+        logger.debug(_(f"No parent path provided in {childPath} unable to get permissions from it"))
         return
 
     childPath = os.path.join(parentPath, os.path.basename(childPath))
@@ -568,13 +598,13 @@ def chmodAsParent(childPath):
     user_id = os.geteuid()  # @UndefinedVariable - only available on UNIX
 
     if user_id not in (childPath_owner, 0):
-        logger.debug(_("Not running as root or owner of {location}, not trying to set permissions").format(location=childPath))
+        logger.debug(_(f"Not running as root or owner of {childPath}, not trying to set permissions"))
         return
 
     try:
         os.chmod(childPath, childMode)
-    except OSError:
-        logger.debug(_("Failed to set permission for {0} to {1:o}, parent directory has {2:o}").format(childPath, childMode, parentMode))
+    except OSError as error:
+        logger.debug(_(f"There was a problem setting permissions of {childPath} to {childMode:o}, parent directory has {parentMode:o}. Error: {error}"))
 
 
 def fixSetGroupID(childPath):
@@ -582,7 +612,8 @@ def fixSetGroupID(childPath):
     Inherid SGID from parent
     (does not work on Windows hosts)
 
-    :param childPath: Path to inherit SGID permissions from parent
+    Parameters:
+        childPath: Path to inherit SGID permissions from parent
     """
 
     if platform.system() == "Windows":
@@ -607,23 +638,28 @@ def fixSetGroupID(childPath):
             user_id = os.geteuid()
 
             if user_id not in (childPath_owner, 0):
-                logger.debug(_("Not running as root or owner of {}, not trying to set the set-group-ID").format(childPath))
+                logger.debug(_(f"Not running as root or owner of {childPath}, not trying to set the set-group-ID"))
                 return
 
             try:
                 os.chown(childPath, -1, parentGID)
-                logger.debug(_("Respecting the set-group-ID bit on the parent directory for {0}").format(childPath))
-            except (OSError, PermissionError):
-                logger.debug("Failed to respect the set-group-ID bit on the parent directory for {0} (setting group ID {1})".format(childPath, parentGID))
+                logger.debug(_(f"Respecting the set-group-ID bit on the parent directory of {childPath}"))
+            except (OSError, PermissionError) as error:
+                logger.debug(
+                    _(
+                        f"There was a problem respecting the set-group-ID bit on the parent directory of {childPath} (setting group ID {parentGID}). Error: {error}"
+                    )
+                )
     except Exception as error:
-        logger.debug(f"Error setting set-group-id on the parent directory. {error}")
+        logger.debug(_(f"There was a problem setting set-group-id on the parent directory of {childPath}. Error: {error}"))
 
 
 def is_anime_in_show_list():
     """
     Check if any shows in list contain anime
 
-    :return: True if global showlist contains Anime, False if not
+    Returns:
+         True if global showlist contains Anime, False if not
     """
 
     for show in settings.showList:
@@ -642,10 +678,12 @@ def get_absolute_number_from_season_and_episode(show, season, episode):
     """
     Find the absolute number for a show episode
 
-    :param show: Show object
-    :param season: Season number
-    :param episode: Episode number
-    :return: The absolute number
+    Parameters:
+        show: Show object
+        season: Season number
+        episode: Episode number
+    Returns:
+         The absolute number
     """
 
     absolute_number = None
@@ -654,14 +692,12 @@ def get_absolute_number_from_season_and_episode(show, season, episode):
         main_db_con = db.DBConnection()
         sql = "SELECT * FROM tv_episodes WHERE showid = ? and season = ? and episode = ?"
         sql_results = main_db_con.select(sql, [show.indexerid, season, episode])
-
+        season_episode = episode_num(season, episode)
         if len(sql_results) == 1:
             absolute_number = int(sql_results[0]["absolute_number"])
-            logger.debug(
-                _("Found absolute number {absolute} for show {show} {ep}").format(absolute=absolute_number, show=show.name, ep=episode_num(season, episode))
-            )
+            logger.debug(_(f"Found absolute number {absolute_number} for show {show.name} {season_episode}"))
         else:
-            logger.debug(_("No entries for absolute number for show {show} {ep}").format(show=show.name, ep=episode_num(season, episode)))
+            logger.debug(_(f"No entries found for the absolute number of {show.name} {season_episode}"))
 
     return absolute_number
 
@@ -686,9 +722,11 @@ def get_all_episodes_from_absolute_number(show, absolute_numbers, indexer_id=Non
 def sanitizeSceneName(name, anime=False):
     """
     Takes a show name and returns the "scenified" version of it.
-    :param name: The name to sanitize
-    :param anime: Some show have a ' in their name(Kuroko's Basketball) and is needed for search.
-    :return: A string containing the scene version of the show name given.
+    Parameters:
+        name: The name to sanitize
+        anime: Some show have a ' in their name(Kuroko's Basketball) and is needed for search.
+    Returns:
+         A string containing the scene version of the show name given.
     """
 
     if not name:
@@ -717,9 +755,11 @@ def create_https_certificates(ssl_cert, ssl_key):
     """
     Create self-signed HTTPS certificares and store in paths 'ssl_cert' and 'ssl_key'
 
-    :param ssl_cert: Path of SSL certificate file to write
-    :param ssl_key: Path of SSL keyfile to write
-    :return: True on success, False on failure
+    Parameters:
+        ssl_cert: Path of SSL certificate file to write
+        ssl_key: Path of SSL keyfile to write
+    Returns:
+         True on success, False on failure
     """
 
     try:
@@ -757,11 +797,11 @@ def create_https_certificates(ssl_cert, ssl_key):
         open(ssl_cert, "wb").write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
     except Exception as error:
         logger.info(traceback.format_exc())
-        logger.warning(_("Error creating SSL key and certificate {error}").format(error))
+        logger.warning(_(f"There was a problem creating the SSL key and certificate. Error: {error}"))
         return False
 
-    logger.info(_("Created https key: {ssl_key}").format(ssl_key=ssl_key))
-    logger.info(_("Created https cert: {ssl_cert}").format(ssl_cert=ssl_cert))
+    logger.info(_(f"Created https key: {ssl_key}"))
+    logger.info(_(f"Created https cert: {ssl_cert}"))
     return True
 
 
@@ -769,82 +809,37 @@ def backupVersionedFile(old_file, version):
     """
     Back up an old version of a file
 
-    :param old_file: Original file, to take a backup from
-    :param version: Version of file to store in backup
-    :return: True if success, False if failure
+    Parameters:
+        old_file: Original file, to take a backup from
+        version: Version of file to store in backup
+    Returns:
+         True if success, False if failure
     """
 
     numTries = 0
 
-    new_file = old_file + "." + "v" + str(version)
+    if not isinstance(old_file, Path):
+        old_file = Path(old_file)
 
+    new_file = old_file.with_suffix(f"{old_file.suffix}.v{version}")
     while not os.path.isfile(new_file):
         if not os.path.isfile(old_file):
-            logger.debug(_("Not creating backup, {0} doesn't exist").format(old_file))
+            logger.debug(_(f"Not creating backup, {old_file} doesn't exist"))
             break
 
         try:
-            logger.debug(_("Trying to back up {0} to {1}").format(old_file, new_file))
+            logger.debug(_(f"Trying to back up {old_file} to {new_file}"))
             shutil.copy(old_file, new_file)
             logger.debug(_("Backup done"))
             break
         except Exception as error:
-            logger.warning(_("Error while trying to back up {0} to {1} : {2}").format(old_file, new_file, error))
+            logger.warning(_(f"There was a problem while trying to back up {old_file} to {new_file}. Error: {error}"))
             numTries += 1
             time.sleep(1)
             logger.debug(_("Trying again."))
 
         if numTries >= 10:
-            logger.exception(_("Unable to back up {0} to {1} please do it manually.").format(old_file, new_file))
-            return False
-
-    return True
-
-
-def restoreVersionedFile(backup_file, version):
-    """
-    Restore a file version to original state
-
-    :param backup_file: File to restore
-    :param version: Version of file to restore
-    :return: True on success, False on failure
-    """
-
-    numTries = 0
-
-    new_file, ext_ = os.path.splitext(backup_file)
-    restore_file = new_file + "." + "v" + str(version)
-
-    if not os.path.isfile(new_file):
-        logger.debug(_("Not restoring, {0} doesn't exist").format(new_file))
-        return False
-
-    try:
-        logger.debug(_("Trying to backup {0} to {1}.r{2} before restoring backup").format(new_file, new_file, version))
-
-        shutil.move(new_file, new_file + "." + "r" + str(version))
-    except Exception as error:
-        logger.warning(_("Error while trying to backup DB file {0} before proceeding with restore: {1}").format(restore_file, error))
-        return False
-
-    while not os.path.isfile(new_file):
-        if not os.path.isfile(restore_file):
-            logger.debug(_("Not restoring, {0} doesn't exist").format(restore_file))
-            break
-
-        try:
-            logger.debug(_("Trying to restore file {0} to {1}").format(restore_file, new_file))
-            shutil.copy(restore_file, new_file)
-            logger.debug(_("Restore done"))
-            break
-        except Exception as error:
-            logger.warning(_("Error while trying to restore file {0}. Error: {1}").format(restore_file, error))
-            numTries += 1
-            time.sleep(1)
-            logger.debug(_("Trying again. Attempt #: {0}").format(numTries))
-
-        if numTries >= 10:
-            logger.warning(_("Unable to restore file {0} to {1}").format(restore_file, new_file))
+            logger.exception(_(f"Unable to back up {old_file} to {new_file} please do it manually."))
             return False
 
     return True
@@ -989,7 +984,7 @@ def get_show(name, tryIndexers=False):
         if showObj and not fromCache:
             sickchill.oldbeard.name_cache.add_name(name, showObj.indexerid)
     except Exception as error:
-        logger.debug(_("Error when attempting to find show: {0} in SickChill. Error: {1} ").format(name, error))
+        logger.debug(_(f"There was a problem when attempting to find {name} in SickChill. Error: {error}"))
         logger.debug(traceback.format_exc())
 
     return showObj
@@ -999,7 +994,8 @@ def is_hidden_folder(folder):
     """
     Returns True if folder is hidden.
     On Linux based systems hidden folders start with . (dot)
-    :param folder: Full path of folder to check
+    Parameters:
+        folder: Full path of folder to check
     """
 
     def is_hidden(filepath):
@@ -1023,7 +1019,8 @@ def is_hidden_folder(folder):
 
 def real_path(path):
     """
-    Returns: the canonicalized absolute pathname. The resulting path will have no symbolic link, '/./' or '/../' components.
+    Returns:
+        the canonicalized absolute pathname. The resulting path will have no symbolic link, '/./' or '/../' components.
     """
     return os.path.normpath(os.path.normcase(os.path.realpath(path)))
 
@@ -1033,8 +1030,9 @@ def is_subdirectory(subdir_path, topdir_path):
     Returns true if a subdir_path is a subdirectory of topdir_path
     else otherwise.
 
-    :param subdir_path: The full path to the sub-directory
-    :param topdir_path: The full path to the top directory to check subdir_path against
+    Parameters:
+        subdir_path: The full path to the subdirectory
+        topdir_path: The full path to the top directory to check subdir_path against
     """
     topdir_path = real_path(topdir_path)
     subdir_path = real_path(subdir_path)
@@ -1058,12 +1056,12 @@ def set_up_anidb_connection():
     if not settings.ADBA_CONNECTION:
 
         def anidb_logger(msg):
-            return logger.debug(_("anidb: {0} ").format(msg))
+            return logger.debug(_(f"{msg}"))
 
         try:
             settings.ADBA_CONNECTION = adba.Connection(keep_alive=True, log=anidb_logger)
         except Exception as error:
-            logger.warning(_("anidb exception msg: {0} ").format(error))
+            logger.warning(_(f"There was a problem attempting to connect to anidb. Error: {error}"))
             return False
 
     try:
@@ -1072,7 +1070,7 @@ def set_up_anidb_connection():
         else:
             return True
     except Exception as error:
-        logger.warning(_("anidb exception msg: {0} ").format(error))
+        logger.warning(_(f"There was a problem attempting to authenticate with anidb. Error: {error}"))
         return False
 
     return settings.ADBA_CONNECTION.authed()
@@ -1082,8 +1080,9 @@ def makeZip(fileList, archive):
     """
     Create a ZIP of files
 
-    :param fileList: A list of file names - full path each name
-    :param archive: File name for the archive with a full path
+    Parameters:
+        fileList: A list of file names - full path each name
+        archive: File name for the archive with a full path
     """
 
     try:
@@ -1093,7 +1092,7 @@ def makeZip(fileList, archive):
         a.close()
         return True
     except Exception as error:
-        logger.exception(_("Zip creation error: {0} ").format(error))
+        logger.exception(_(f"There was a problem creating the zip file. Error: {error}"))
         return False
 
 
@@ -1101,8 +1100,9 @@ def extractZip(archive, targetDir):
     """
     Unzip a file to a directory
 
-    :param archive: The file name of the archive to extract with a full path
-    :param targetDir: The full path to the extraction target directory
+    Parameters:
+        archive: The file name of the archive to extract with a full path
+        targetDir: The full path to the extraction target directory
     """
 
     try:
@@ -1125,7 +1125,7 @@ def extractZip(archive, targetDir):
         zip_file.close()
         return True
     except Exception as error:
-        logger.exception(_("Zip extraction error: {0} ").format(error))
+        logger.exception(_(f"There was a problem extracting the zip file {archive}. Error: {error}"))
         return False
 
 
@@ -1133,10 +1133,12 @@ def backup_config_zip(fileList, archive, arcname=None):
     """
     Store the config file as a ZIP
 
-    :param fileList: List of files to store
-    :param archive: ZIP file name
-    :param arcname: Archive path
-    :return: True on success, False on failure
+    Parameters:
+        fileList: List of files to store
+        archive: ZIP file name
+        arcname: Archive path
+    Returns:
+         True on success, False on failure
     """
 
     try:
@@ -1146,7 +1148,7 @@ def backup_config_zip(fileList, archive, arcname=None):
         a.close()
         return True
     except Exception as error:
-        logger.warning(_("Zip creation error: {0} ").format(error))
+        logger.warning(_(f"There was a problem creating the zip file. Error: {error}"))
         return False
 
 
@@ -1154,9 +1156,11 @@ def restore_config_zip(archive, targetDir):
     """
     Restores a Config ZIP file back in place
 
-    :param archive: ZIP filename
-    :param targetDir: Directory to restore to
-    :return: True on success, False on failure
+    Parameters:
+        archive: ZIP filename
+        targetDir: Directory to restore to
+    Returns:
+         True on success, False on failure
     """
 
     try:
@@ -1168,8 +1172,10 @@ def restore_config_zip(archive, targetDir):
                 head, tail = os.path.split(path)
                 return tail or os.path.basename(head)
 
-            bakFilename = "{0}-{1}".format(path_leaf(targetDir), datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
-            shutil.move(targetDir, os.path.join(os.path.dirname(targetDir), bakFilename))
+            base_backup_name = path_leaf(targetDir)
+            date_time_string = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_filename = f"{base_backup_name}-{date_time_string}"
+            shutil.move(targetDir, os.path.join(os.path.dirname(targetDir), backup_filename))
 
         zip_file = zipfile.ZipFile(archive, "r", allowZip64=True)
         for member in zip_file.namelist():
@@ -1177,7 +1183,7 @@ def restore_config_zip(archive, targetDir):
         zip_file.close()
         return True
     except Exception as error:
-        logger.exception(_("Zip extraction error: {0}").format(error))
+        logger.exception(_(f"There was a problem extracting zip file {archive}. Error: {error}"))
         shutil.rmtree(targetDir)
         return False
 
@@ -1186,9 +1192,11 @@ def touchFile(fname, atime=None):
     """
     Touch a file (change modification date)
 
-    :param fname: Filename to touch
-    :param atime: Specific access time (defaults to None)
-    :return: True on success, False on failure
+    Parameters:
+        fname: Filename to touch
+        atime: Specific access time (defaults to None)
+    Returns:
+         True on success, False on failure
     """
 
     if atime and fname and os.path.isfile(fname):
@@ -1202,7 +1210,7 @@ def make_indexer_session():
     session = make_session()
     session.verify = (False, certifi.where())[settings.SSL_VERIFY]
     if settings.PROXY_SETTING and settings.PROXY_INDEXERS:
-        logger.debug(_("Using global proxy for indexers: {}").format(settings.PROXY_SETTING))
+        logger.debug(_(f"Using global proxy for indexers: {settings.PROXY_SETTING}"))
         session.proxies = {"http": settings.PROXY_SETTING, "https": settings.PROXY_SETTING}
     return session
 
@@ -1210,7 +1218,6 @@ def make_indexer_session():
 def make_session():
     session = requests.Session()
     session.headers.update({"User-Agent": USER_AGENT, "Accept-Encoding": "gzip,deflate"})
-    session = cloudscraper.create_scraper(sess=session, delay=6)
     return CacheControl(sess=session, cache_etags=True)
 
 
@@ -1219,7 +1226,7 @@ def request_defaults(kwargs):
 
     # request session proxies
     if kwargs.pop("allow_proxy", True) and settings.PROXY_SETTING:
-        logger.debug(_("Using global proxy: {}").format(settings.PROXY_SETTING))
+        logger.debug(_(f"Using global proxy: {settings.PROXY_SETTING}"))
         proxies = {"http": settings.PROXY_SETTING, "https": settings.PROXY_SETTING}
     else:
         proxies = None
@@ -1231,11 +1238,11 @@ def getURL(
     url,
     post_data=None,
     params=None,
-    headers=None,  # pylint:disable=too-many-arguments, too-many-return-statements, too-many-branches, too-many-locals
+    headers=None,
     timeout=30,
-    session=None,
+    session: requests.Session = None,
     **kwargs,
-):
+) -> Union[requests.Response, dict]:
     """
     Returns data retrieved from the url provider.
     """
@@ -1246,7 +1253,38 @@ def getURL(
 
         hooks, cookies, verify, proxies = request_defaults(kwargs)
 
-        resp = session.request(
+        flaresolverr = kwargs.pop("flaresolverr", False)
+        if flaresolverr and settings.FLARESOLVERR_URI:
+            if params:
+                url = f"{url}?{urllib.parse.urlencode(params)}"
+
+            fs_json = {"cmd": "request.get", "url": url, "userAgent": "Windows NT 10.0; Win64; x64) AppleWebKit/5...", "maxTimeout": 60000}
+
+            if post_data:
+                fs_json.update(cmd="request.post", postData=post_data)
+
+            if cookies:
+                fs_json.update(cookies=cookies)
+
+            if proxies:
+                fs_json.update(proxy=proxies)
+
+            response = session.post(
+                settings.FLARESOLVERR_URI,
+                json=fs_json,
+                headers={"Content-Type": "application/json"},
+                timeout=timeout,
+                hooks=hooks,
+                verify=False,
+            )
+
+            json_result = response.json()
+            response.raise_for_status()
+            session.cookies = json_result["solution"]["cookies"]
+            session.headers = json_result["solution"]["headers"]
+            return json_result["response"]
+
+        response = session.request(
             "POST" if post_data else "GET",
             url,
             data=post_data or {},
@@ -1260,16 +1298,15 @@ def getURL(
             proxies=proxies,
             verify=verify,
         )
-        resp.raise_for_status()
+        response.raise_for_status()
     except Exception as error:
-        # noinspection PyTypeChecker
         handle_requests_exception(error)
         return None
 
     try:
-        return resp if response_type == "response" or response_type is None else resp.json() if response_type == "json" else getattr(resp, response_type, resp)
+        return response if response_type in ("response", None) else response.json() if response_type == "json" else getattr(response, response_type, response)
     except ValueError:
-        logger.debug(_("Requested a json response but response was not json, check the url: {0}").format(url))
+        logger.debug(_(f"Requested a json response but response was not json, check the url: {url}"))
         return None
 
 
@@ -1277,11 +1314,13 @@ def download_file(url, filename, session=None, headers=None, **kwargs):  # pylin
     """
     Downloads a file specified
 
-    :param url: Source URL
-    :param filename: Target file on filesystem
-    :param session: request session to use
-    :param headers: override existing headers in request session
-    :return: True on success, False on failure
+    Parameters:
+        url: Source URL
+        filename: the target file on the filesystem
+        session: request session to use
+        headers: override existing headers in request session
+    Returns:
+         True on success, False on failure
     """
 
     return_filename = kwargs.get("return_filename", False)
@@ -1308,7 +1347,7 @@ def download_file(url, filename, session=None, headers=None, **kwargs):  # pylin
 
                 chmodAsParent(filename)
             except Exception as error:
-                logger.warning(_("Problem downloading file, setting permissions or writing file to {0} - ERROR: {1}").format(filename, error))
+                logger.warning(_(f"There was a problem downloading, setting permissions, or writing to {filename}. Error: {error}"))
 
     except Exception as error:
         # noinspection PyTypeChecker
@@ -1318,27 +1357,101 @@ def download_file(url, filename, session=None, headers=None, **kwargs):  # pylin
     return True if not return_filename else filename
 
 
-def handle_requests_exception(requests_exception):
+def handle_requests_exception(
+    requests_exception: Union[
+        Exception,
+        TypeError,
+        ValueError,
+        "requests.exceptions.BaseHTTPError",
+        "requests.exceptions.ChunkedEncodingError",
+        "requests.exceptions.ConnectTimeout",
+        "requests.exceptions.ConnectionError",
+        "requests.exceptions.ContentDecodingError",
+        "requests.exceptions.FileModeWarning",
+        "requests.exceptions.HTTPError",
+        "requests.exceptions.InvalidHeader",
+        "requests.exceptions.InvalidJSONError",
+        "requests.exceptions.InvalidProxyURL",
+        "requests.exceptions.InvalidSchema",
+        "requests.exceptions.InvalidURL",
+        "requests.exceptions.MissingSchema",
+        "requests.exceptions.ProxyError",
+        "requests.exceptions.ReadTimeout",
+        "requests.exceptions.RequestException",
+        "requests.exceptions.RequestsDependencyWarning",
+        "requests.exceptions.RequestsWarning",
+        "requests.exceptions.RetryError",
+        "requests.exceptions.SSLError",
+        "requests.exceptions.StreamConsumedError",
+        "requests.exceptions.Timeout",
+        "requests.exceptions.TooManyRedirects",
+        "requests.exceptions.URLRequired",
+        "requests.exceptions.UnrewindableBodyError",
+        "urllib3.exceptions.BodyNotHttplibCompatible",
+        "urllib3.exceptions.ClosedPoolError",
+        "urllib3.exceptions.ConnectTimeoutError",
+        "urllib3.exceptions.ConnectionError",
+        "urllib3.exceptions.DecodeError",
+        "urllib3.exceptions.DependencyWarning",
+        "urllib3.exceptions.EmptyPoolError",
+        "urllib3.exceptions.HTTPError",
+        "urllib3.exceptions.HTTPWarning",
+        "urllib3.exceptions.HeaderParsingError",
+        "urllib3.exceptions.HostChangedError",
+        "urllib3.exceptions.IncompleteRead",
+        "urllib3.exceptions.InsecurePlatformWarning",
+        "urllib3.exceptions.InsecureRequestWarning",
+        # "urllib3.exceptions.InvalidChunkLength",
+        "urllib3.exceptions.InvalidHeader",
+        "urllib3.exceptions.LocationParseError",
+        "urllib3.exceptions.LocationValueError",
+        "urllib3.exceptions.MaxRetryError",
+        "urllib3.exceptions.NewConnectionError",
+        "urllib3.exceptions.PoolError",
+        "urllib3.exceptions.ProtocolError",
+        "urllib3.exceptions.ProxyError",
+        "urllib3.exceptions.ProxySchemeUnknown",
+        "urllib3.exceptions.ProxySchemeUnsupported",
+        "urllib3.exceptions.ReadTimeoutError",
+        "urllib3.exceptions.RequestError",
+        "urllib3.exceptions.ResponseError",
+        "urllib3.exceptions.ResponseNotChunked",
+        "urllib3.exceptions.SNIMissingWarning",
+        "urllib3.exceptions.SSLError",
+        "urllib3.exceptions.SecurityWarning",
+        "urllib3.exceptions.SubjectAltNameWarning",
+        "urllib3.exceptions.SystemTimeWarning",
+        "urllib3.exceptions.TimeoutError",
+        "urllib3.exceptions.TimeoutStateError",
+        "urllib3.exceptions.URLSchemeUnknown",
+        "urllib3.exceptions.UnrewindableBodyError",
+        # "urllib3.exceptions.httplib_IncompleteRead",
+    ]
+):
     def get_level(exception):
         return (logger.ERROR, logger.WARNING)[exception and "s,t,o,p,b,r,e,a,k,i,n,g,f" in str(exception)]
 
     default = _("Request failed: {0} ({1})")
+
+    def classname(error: Exception) -> str:
+        return error.__class__.__name__
+
     try:
         raise requests_exception
     except requests.exceptions.SSLError as error:
         if ssl.OPENSSL_VERSION_INFO < (1, 0, 1, 5):
-            logger.info(_("SSL Error requesting url: '{0}' You have {1}, try upgrading OpenSSL to 1.0.1e+").format(error.request.url, ssl.OPENSSL_VERSION))
+            logger.info(_(f"SSL Error requesting url: '{error.request.url}' You have {ssl.OPENSSL_VERSION}, try upgrading OpenSSL to 1.0.1e+. Error: {error}"))
         if settings.SSL_VERIFY:
-            logger.info(_("SSL Error requesting url: '{0}' Try disabling Cert Verification on the advanced tab of /config/general").format(error.request.url))
-        logger.debug(default.format(error, type(error.__class__.__name__)))
+            logger.info(
+                _(f"SSL Error requesting url: '{error.request.url}' Try disabling Cert Verification on the advanced tab of /config/general. Error: {error}")
+            )
+        logger.debug(default.format(error, classname(error)))
         logger.debug(traceback.format_exc())
     except requests.exceptions.ContentDecodingError as error:
-        logger.info(default.format(error, type(error.__class__.__name__)))
+        logger.info(default.format(error, classname(error)))
         logger.debug(traceback.format_exc())
     except urllib3.exceptions.ProxySchemeUnknown as error:
         logger.info(default.format("You must prefix your proxy setting with a scheme (http/https/etc)", error))
-    except CloudflareException as error:
-        logger.info(default.format(error, type(error.__class__.__name__)))
     except requests.exceptions.RequestException as error:
         if not (
             hasattr(error, "response")
@@ -1348,19 +1461,19 @@ def handle_requests_exception(requests_exception):
             and hasattr(error.response, "headers")
             and error.response.headers.get("X-Content-Type-Options") == "nosniff"
         ):
-            logger.info(default.format(error, type(error.__class__.__name__)))
+            logger.info(default.format(error, classname(error)))
     except (TypeError, ValueError) as error:
         level = get_level(error)
-        logger.log(level, default.format(error, type(error.__class__.__name__)))
-        if requests_exception.request:
-            logger.info(_("url is {0}").format(repr(requests_exception.request.url)))
-            logger.info("headers are {0}".format(repr(requests_exception.request.headers)))
-            logger.info("params are {0}".format(repr(requests_exception.request.params)))
-            logger.info("post_data is {0}".format(repr(requests_exception.request.data)))
+        logger.log(level, default.format(error, classname(error)))
+        if hasattr(requests_exception, "request") and requests_exception.request:
+            logger.info(_(f"url is {requests_exception.request.url}"))
+            logger.info(_(f"headers are {requests_exception.request.headers}"))
+            logger.info(_(f"params are {requests_exception.request.params}"))
+            logger.info(_(f"post_data is {requests_exception.request.data}"))
         if level == logger.WARNING:
             logger.debug(traceback.format_exc())
     except Exception as error:
-        logger.log(get_level(error), default.format(error, type(error.__class__.__name__)))
+        logger.log(get_level(error), default.format(error, classname(error)))
         logger.debug(traceback.format_exc())
 
 
@@ -1368,8 +1481,10 @@ def get_size(start_path="."):
     """
     Find the total dir and filesize of a path
 
-    :param start_path: Path to recursively count size
-    :return: total filesize
+    Parameters:
+        start_path: Path to recursively count size
+    Returns:
+         total filesize
     """
 
     if not os.path.isdir(start_path):
@@ -1381,12 +1496,12 @@ def get_size(start_path="."):
             fp = os.path.join(dirpath, f)
             if os.path.islink(fp) and not os.path.isfile(fp):
                 log = logger.debug if settings.IGNORE_BROKEN_SYMLINKS else logger.warning
-                log(_("Unable to get size for file {0} because the link to the file is not valid").format(fp))
+                log(_(f"Unable to get size for file {fp} because the link to the file is not valid"))
                 continue
             try:
                 total_size += os.path.getsize(fp)
             except OSError as error:
-                logger.exception(_("Unable to get size for file {0} Error: {1}").format(fp, error))
+                logger.exception(_(f"Unable to get size for file {fp}. Error: {error}"))
                 logger.debug(traceback.format_exc())
     return total_size
 
@@ -1402,7 +1517,7 @@ def generateApiKey():
 def remove_article(text=""):
     """Remove the english articles from a text string"""
 
-    return re.sub(r"(?i)^(?:(?:A(?!\s+to)n?)|The)\s(\w)", r"\1", text)
+    return re.sub(r"(?i)^(?:A(?!\s+to)n?|The)\s(\w)", r"\1", text)
 
 
 def generateCookieSecret():
@@ -1440,11 +1555,13 @@ def verify_freespace(src, dest, oldfile=None, method="copy"):
     """
     Checks if the target system has enough free space to copy or move a file.
 
-    :param src: Source filename
-    :param dest: Destination path (show dir in current usage)
-    :param oldfile: File to be replaced (defaults to None)
-    :param method: The post processing method
-    :return: True if there is enough space for the file, False if there isn't. Also returns True if the OS doesn't support this option
+    Parameters:
+        src: Source filename
+        dest: Destination path (show dir in current usage)
+        oldfile: File to be replaced (defaults to None)
+        method: The post-processing method
+    Returns:
+         True if there is enough space for the file, False if there isn't. Also returns True if the OS doesn't support this option
     """
 
     if not isinstance(oldfile, list):
@@ -1453,14 +1570,12 @@ def verify_freespace(src, dest, oldfile=None, method="copy"):
     logger.debug(_("Trying to determine free space on the destination drive"))
 
     if not os.path.isfile(src):
-        logger.warning(_("A path to a file is required for the source. {0} is not a file.").format(src))
+        logger.warning(_(f"A path to a file is required for the source. {src} is not a file."))
         return True
 
     if not (os.path.isdir(dest) or (settings.CREATE_MISSING_SHOW_DIRS and os.path.isdir(os.path.dirname(dest)))):
         logger.warning(
-            _("A path is required for the destination. Check that the root dir and show locations are correct for {0} (I got '{1}')").format(
-                oldfile[0].name, dest
-            )
+            _(f"A path is required for the destination. Check that the root dir and show locations are correct for {oldfile[0].name} (I got '{dest}')")
         )
         return False
 
@@ -1477,12 +1592,12 @@ def verify_freespace(src, dest, oldfile=None, method="copy"):
         disk_free = disk_usage(dest)
     except Exception as error:
         logger.warning(_("Unable to determine free space, so I will assume there is enough."))
-        logger.debug(_("Error: {error}").format(error=error))
+        logger.debug(_(f"Error: {error}"))
         logger.debug(traceback.format_exc())
         return True
 
-    # Lets also do this for symlink and hardlink
-    if "link" in method and disk_free > 1024 ** 2:
+    # Let's also do this for symlink and hardlink
+    if "link" in method and disk_free > 1024**2:
         return True
 
     needed_space = os.path.getsize(src)
@@ -1496,8 +1611,8 @@ def verify_freespace(src, dest, oldfile=None, method="copy"):
         return True
     else:
         logger.warning(
-            _("Not enough free space: Needed: {0} bytes ( {1} ), found: {2} bytes ( {3} )").format(
-                needed_space, pretty_file_size(needed_space), disk_free, pretty_file_size(disk_free)
+            _(
+                f"Not enough free space: Needed: {needed_space} bytes ( {pretty_file_size(needed_space)} ), found: {disk_free} bytes ( {pretty_file_size(disk_free)} )"
             )
         )
         return False
@@ -1505,15 +1620,16 @@ def verify_freespace(src, dest, oldfile=None, method="copy"):
 
 def disk_usage_hr(diskPath=None):
     """
-    returns the free space in human readable bytes for a given path or False if no path given
-    :param diskPath: the filesystem path being checked
+    returns the free space in human-readable bytes for a given path or False if no path given
+    Parameters:
+        diskPath: the filesystem path being checked
     """
     if diskPath and os.path.exists(diskPath):
         try:
             free = disk_usage(diskPath)
         except Exception as error:
             logger.warning(_("Unable to determine free space"))
-            logger.debug(_("Error: {error}").format(error=error))
+            logger.debug(_(f"Error: {error}"))
             logger.debug(traceback.format_exc())
         else:
             return pretty_file_size(free)
@@ -1531,13 +1647,13 @@ def pretty_time_delta(seconds):
     time_delta = sign_string
 
     if days > 0:
-        time_delta += "{0}d".format(days)
+        time_delta += f"{days}d"
     if hours > 0:
-        time_delta += "{0}h".format(hours)
+        time_delta += f"{hours}h"
     if minutes > 0:
-        time_delta += "{0}m".format(minutes)
+        time_delta += f"{minutes}m"
     if seconds > 0:
-        time_delta += "{0}s".format(seconds)
+        time_delta += f"{seconds}s"
 
     return time_delta
 
@@ -1546,13 +1662,14 @@ def is_file_locked(checkfile, write_check=False):
     """
     Checks to see if a file is locked. Performs three checks
         1. Checks if the file even exists
-        2. Attempts to open the file for reading. This will determine if the file has a write lock.
+        2. Attempts to open the file for reading. This will determine if the file has a write-lock.
             Write locks occur when the file is being edited or copied to, e.g. a file copy destination
         3. If the readLockCheck parameter is True, attempts to rename the file. If this fails the
             file is open by some other process for reading. The file can be read, but not written to
             or deleted.
-    :param checkfile: the file being checked
-    :param write_check: when true will check if the file is locked for writing (prevents move operations)
+    Parameters:
+        checkfile: the file being checked
+        write_check: when true will check if the file is locked for writing (prevents move operations)
     """
 
     checkfile = os.path.abspath(checkfile)
@@ -1584,7 +1701,7 @@ def tvdbid_from_remote_id(indexer_id, indexer):  # pylint:disable=too-many-retur
     session = make_session()
     tvdb_id = ""
     if indexer == "IMDB":
-        url = "http://www.thetvdb.com/api/GetSeriesByRemoteID.php?imdbid={0}".format(indexer_id)
+        url = f"https://www.thetvdb.com/api/GetSeriesByRemoteID.php?imdbid={indexer_id}"
         data = getURL(url, session=session, returns="content")
         if data is None:
             return tvdb_id
@@ -1598,7 +1715,7 @@ def tvdbid_from_remote_id(indexer_id, indexer):  # pylint:disable=too-many-retur
 
         return tvdb_id
     elif indexer == "ZAP2IT":
-        url = "http://www.thetvdb.com/api/GetSeriesByRemoteID.php?zap2it={0}".format(indexer_id)
+        url = f"https://www.thetvdb.com/api/GetSeriesByRemoteID.php?zap2it={indexer_id}"
         data = getURL(url, session=session, returns="content")
         if data is None:
             return tvdb_id
@@ -1612,7 +1729,7 @@ def tvdbid_from_remote_id(indexer_id, indexer):  # pylint:disable=too-many-retur
 
         return tvdb_id
     elif indexer == "TVMAZE":
-        url = "http://api.tvmaze.com/shows/{0}".format(indexer_id)
+        url = f"https://api.tvmaze.com/shows/{indexer_id}"
         data = getURL(url, session=session, returns="json")
         if data is None:
             return tvdb_id
@@ -1711,3 +1828,23 @@ def manage_torrents_url(reset=False):
 def is_docker():
     path = "/proc/self/cgroup"
     return os.path.exists("/.dockerenv") or os.path.isfile(path) and any("docker" in line for line in open(path))
+
+
+def get_exception_class_type_hint_string() -> None:
+    """
+    This is not used in code, just used for creating a type hint string for me to use above on handle_requests_exception
+    """
+    output = set()
+    import requests.exceptions
+    import urllib3.exceptions
+
+    for location in (requests.exceptions, urllib3.exceptions):
+        for item_string in dir(location):
+            try:
+                item = getattr(location, item_string)
+                if type(item) == type(Exception) and issubclass(item, (IOError, Exception)):
+                    output.add(f"{location.__name__}.{item_string}")
+            except Exception as error:
+                print(f"the error was by {item_string} with {error}")
+    output = output.union({"TypeError", "ValueError", "Exception"})
+    return print(f"Union{sorted(list(output))}".replace("'", "").replace(" ", "\n    ").replace("[", "[\n    ").replace("]", "\n]"))

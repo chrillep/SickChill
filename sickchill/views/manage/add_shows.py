@@ -16,7 +16,6 @@ from sickchill.helper import sanitize_filename, try_int
 from sickchill.oldbeard import config, db, filters, helpers, ui
 from sickchill.oldbeard.blackandwhitelist import short_group_names
 from sickchill.oldbeard.common import Quality
-from sickchill.oldbeard.show_name_helpers import containsAtLeastOneWord
 from sickchill.oldbeard.trakt_api import TraktAPI
 from sickchill.oldbeard.traktTrending import trakt_trending
 from sickchill.show.recommendations.favorites import favorites
@@ -29,9 +28,6 @@ from sickchill.views.routes import Route
 
 @Route("/addShows(/?.*)", name="addShows")
 class AddShows(Home):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def index(self, *args_, **kwargs_):
         t = PageTemplate(rh=self, filename="addShows.mako")
         return t.render(title=_("Add Shows"), header=_("Add Shows"), topmenu="home", controller="addShows", action="index")
@@ -95,7 +91,7 @@ class AddShows(Home):
                 }
             )
 
-        if exact:
+        if exact in [True, "1"]:
             logger.debug(_("Filtering and sorting out excess results because exact match was checked"))
             final_results = [item for item in final_results if search_term.lower() in item[4].lower()]
             final_results.sort(key=itemgetter(4))
