@@ -189,7 +189,7 @@ pybabel update
 python = ">=3.6.2,<4"
 beautifulsoup4 = "^4.9.3"
 "bencode.py" = "^4.0.0"
-CacheControl = "^0.12.6"
+CacheControl = "^0.13.0"
 chardet = "^4.0.0"
 configobj = "^5.0.6"
 feedparser = "^6.0.2"
