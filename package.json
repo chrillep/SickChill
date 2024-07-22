@@ -31,7 +31,7 @@
     "grunt": "^1.5.2",
     "grunt-bower-concat": "git+https://github.com/miigotu/grunt-bower-concat.git",
     "grunt-bower-task": "^0.6.1",
-    "grunt-cli": "^1.2.0",
+    "grunt-cli": "^1.5.0",
     "grunt-contrib-clean": "^2.0.0",
     "grunt-contrib-copy": "^1.0.0",
     "grunt-contrib-cssmin": "^4.0.0",
